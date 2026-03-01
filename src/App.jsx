@@ -5,6 +5,9 @@ import { Button, Form, Container, Row, Col, ToggleButtonGroup, ToggleButton } fr
 import ColorChooser from './ColorChooser'
 import { MandalaLib } from './mandalalibraries'
 import "bootstrap/dist/css/bootstrap.min.css"
+import fill from './fill'
+import { getLocalCoordinates, getSymmetryPoints, hexToRgb, isWhite, getAdjacentWhite } from './getlocalcoordinates'
+
 
 function JustMandala() {
   const chartRef = useRef(null)
@@ -69,73 +72,10 @@ function JustMandala() {
 
   function overDraw(event) {
     if (event.ctrlKey) {
-      fill(event)
+      fill(event, chartRef, ctxRef, color, width, slider1, radioValue)
     } else {
       draw(event)
     }
-  }
-
-  function isWhite({ r, g, b }) {
-    return r > 215 && g > 215 && b > 215
-  }
-
-  function getAdjacentWhite(data, startX, startY, width, height) {
-      const stack = [[startX, startY]]
-      const visited = new Set()
-      const result = []
-
-      const key = (x, y) => `${x},${y}`
-
-      const i = (startY * width + startX) * 4
-      const startingcolor = {r: data[i], g: data[i + 1], b: data[i + 2], a: 255}
-
-      while (stack.length > 0) {
-          const [x, y] = stack.pop()
-          const k = key(x, y)
-
-          if (visited.has(k)) continue
-          visited.add(k)
-
-          // bounds check
-          if (x < 0 || y < 0 || x >= width || y >= height) continue
-
-          // color check
-          const i = (y * width + x) * 4
-          // allow one fill to over fill colors
-          if (radioValue === 'fillOne') {
-            //console.log(data[i], startingcolor.r, data[i + 1], startingcolor.g, data[i + 2], startingcolor.b)
-            if (data[i] != startingcolor.r || data[i + 1] != startingcolor.g || data[i + 2] != startingcolor.b) continue
-          } else {
-            if (!isWhite({r: data[i], g: data[i + 1], b: data[i + 2], a: 255})) continue
-          }
-
-          result.push([x, y])
-
-          // add neighbors
-          stack.push([x + 1, y])
-          stack.push([x - 1, y])
-          stack.push([x, y + 1])
-          stack.push([x, y - 1])
-      }
-
-      return result
-  }
-
-  function hexToRgb(hex) {
-      hex = hex.replace(/^#/, "");
-
-      // expand shorthand #fff → #ffffff
-      if (hex.length === 3) {
-          hex = hex.split("").map(c => c + c).join("");
-      }
-
-      const num = parseInt(hex, 16);
-
-      return {
-          r: (num >> 16) & 255,
-          g: (num >> 8) & 255,
-          b: num & 255
-      };
   }
 
   function autoFill() {
@@ -166,13 +106,13 @@ function JustMandala() {
           y = 500 + prey
         }
         // do this in symmetric points order
-        let symmetricPoints = getSymmetryPoints(x, y)
+        let symmetricPoints = getSymmetryPoints(x, y, width, slider1)
         for (let [xx, yy] of symmetricPoints) {
           xx = Math.floor(xx)
           yy = Math.floor(yy)
           const i = (yy * width + xx) * 4
           if (isWhite({r: bgdata[i], g: bgdata[i + 1], b: bgdata[i + 2], a: 255})) {
-            let allcoords = getAdjacentWhite(bgdata, xx, yy, width, width)
+            let allcoords = getAdjacentWhite(bgdata, xx, yy, width, width, radioValue)
             if (allcoords.length > 0) {
               let exclusion = false
               for (const [x, y] of allcoords) {
@@ -216,73 +156,9 @@ function JustMandala() {
     ctx.putImageData(img2, 0, 0)
   }
 
-  function fill(e) {
-    var coord = getLocalCoordinates(e);
-    if (e.buttons == 1) {
-      var x = Math.floor(coord[0])
-      var y = Math.floor(coord[1])
-      let symmetricPoints = getSymmetryPoints(x, y)
-      const ctx = ctxRef.current
-      const img = ctx.getImageData(0, 0, width, width)
-      const data = img.data
-      let usecolor = hexToRgb(color)
-      let idx = 0
-      for (const [prex, prey] of symmetricPoints) {
-        // there tend to be two mirrors in one white zone, necessitating division by 4 to hit every other white zone
-        if (idx % 4 != 0 && radioValue === 'fillHalf') {
-          idx = idx + 1
-          continue
-        }
-        idx = idx + 1
-        let allcoords = []
-        const i = (Math.floor(prey) * width + Math.floor(prex)) * 4
-        if (radioValue === 'fillOne' || isWhite({r: data[i], g: data[i + 1], b: data[i + 2], a: data[i + 3]})) {
-          allcoords = getAdjacentWhite(data, Math.floor(prex), Math.floor(prey), width, width)
-        } else {
-          //console.log("pixel not white")
-        }
-      
-        for (const [x, y] of allcoords) {
-          const i = (y * width + x) * 4
-          data[i]     = usecolor.r
-          data[i + 1] = usecolor.g
-          data[i + 2] = usecolor.b
-          data[i + 3] = 255
-        }
-        // limit one to one
-        if (radioValue === 'fillOne') {
-          break
-        }
-      }      
-      ctx.putImageData(img, 0, 0)
-    }
-  }
-
-  function getSymmetryPoints(x, y) {
-    // The coordinate system has its origin at the center of the canvas,
-    // has up as 0 degrees, right as 90 deg, down as 180 deg, and left as 270 deg.
-    var ctrX = width / 2;
-    var ctrY = width / 2;
-    var relX = x - ctrX;
-    var relY = ctrY - y;
-    var dist = Math.hypot(relX, relY);
-    var angle = Math.atan2(relX, relY); // Radians
-    var result = [];
-    for (var i = 0; i < slider1; i++) {
-      var theta = angle + ((Math.PI * 2) / slider1) * i; // Radians
-      x = ctrX + Math.sin(theta) * dist;
-      y = ctrY - Math.cos(theta) * dist;
-      result.push([x, y]);
-      x = ctrX - Math.sin(theta) * dist;
-      result.push([x, y]);
-    }
-
-    return result;
-  }
-
   function drawLine(x1, y1, x2, y2) {
-    let startPoints = getSymmetryPoints(x1, y1);
-    let endPoints = getSymmetryPoints(x2, y2);
+    let startPoints = getSymmetryPoints(x1, y1, width, slider1)
+    let endPoints = getSymmetryPoints(x2, y2, width, slider1)
 
     for (var i = 0; i < startPoints.length; i++) {
       ctx = ctxRef.current
@@ -299,19 +175,8 @@ function JustMandala() {
     ctx.stroke();
   }
 
-  function getLocalCoordinates(ev) {
-    if (ev.type == "touchstart") {
-      var touch = ev.touches[0] || ev.changedTouches[0];
-      var realTarget = document.elementFromPoint(touch.clientX, touch.clientY);
-      ev.offsetX = touch.clientX - realTarget.getBoundingClientRect().x;
-      ev.offsetY = touch.clientY - realTarget.getBoundingClientRect().y;
-    }
-    const rect = chartRef.current.getBoundingClientRect()
-    return [ev.clientX - rect.left + 0.5, ev.clientY - rect.top + 0.5];
-  }
-
   function draw(e) {
-    var coord = getLocalCoordinates(e);
+    var coord = getLocalCoordinates(e, chartRef);
     // console.log(" getLocalCoordinates[0] " + coord[0]);
 
     var x = coord[0];
@@ -490,15 +355,7 @@ function JustMandala() {
       <Container>
       <Row>
       <Col className='text-center'>
-      <div
-          id="drawCanvas"
-          ref={chartRef}
-          onMouseMove={overDraw}
-          onTouchStart={draw}
-          onClick={overDraw}
-          style={{width: '1200px', height: '1200px', backgroundColor: 'white'}}
-      >
-      </div>
+      <h1>Symmetry Based Mandalas</h1>
     <Form>
       <Form.Label className="text-white" htmlFor="slider1">Symmetry Degree: {slider1}</Form.Label>
       <Form.Range
@@ -525,10 +382,11 @@ function JustMandala() {
           onChange={(e) => handleSlider3Change(e)}
       />      
     </Form>
+      </Col></Row><Row><Col className='text-center'>
     <h2>Click and drag to draw, Control-Click to fill</h2>
     <ColorChooser myLightDark={myLightDark} myPalette={myPalette} setMyPalette={setMyPalette} setCurrentColor={setCurrentColor} skipPalButton={true}
       handleFileInput={(event) => {return MandalaLib.handleFileInput(event, toastId, myPalette, setMyPalette, myLightDark)}} />
-    <div>
+    </Col></Row><Row><Col className='text-center'>
       <div style={{display: 'inline-block'}}>
         <Button onClick={resetCanvas}>Reset Canvas</Button> 
       </div>
@@ -538,7 +396,7 @@ function JustMandala() {
       <div style={{display: 'inline-block', marginLeft: '20px'}}>
         <Button onClick={autoFill}>Automatically Fill Areas</Button>
       </div>
-    </div>
+    </Col></Row><Row><Col className='text-center'>
     <h2>Choose fill behavior:</h2>
     <ToggleButtonGroup type="radio" name="radioGroup" defaultValue="fillAll" onChange={handleRadioChange}>
       <ToggleButton
@@ -557,6 +415,15 @@ function JustMandala() {
         variant="outline-primary">
       Color One</ToggleButton>
     </ToggleButtonGroup>
+      <div
+          id="drawCanvas"
+          ref={chartRef}
+          onMouseMove={overDraw}
+          onTouchStart={draw}
+          onClick={overDraw}
+          style={{width: '1200px', height: '1200px', backgroundColor: 'white', marginTop: '20px'}}
+      >
+      </div>
     </Col>
     </Row>
     </Container>
