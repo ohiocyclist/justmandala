@@ -13,4 +13,5 @@ npm run dev
 
 Put a toe in the water on unit testing with jest, npm test
 
-"https://github.com/ohiocyclist/justmandala/Mandala auto everything.png"
+![Mandala Screenshot](https://github.com/ohiocyclist/justmandala/blob/main/Mandalasamp.png?raw=true)
+
