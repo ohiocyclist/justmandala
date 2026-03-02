@@ -6,6 +6,7 @@ import ColorChooser from './ColorChooser'
 import { MandalaLib } from './mandalalibraries'
 import "bootstrap/dist/css/bootstrap.min.css"
 import fill from './fill'
+import autoFill from './autoFill'
 import { getLocalCoordinates, getSymmetryPoints, hexToRgb, isWhite, getAdjacentWhite } from './getlocalcoordinates'
 
 
@@ -76,84 +77,6 @@ function JustMandala() {
     } else {
       draw(event)
     }
-  }
-
-  function autoFill() {
-    // first, traverse the entire image and find all the fillable areas
-    const fillableAreas = []
-    const ctx = ctxRef.current
-    const img = ctx.getImageData(0, 0, width, width)
-    const bgdata = img.data
-    let palLocn = 0
-    // all this is necessary to turn this into an array of hex sequences
-    const palArr = decodeURIComponent(myPalette).replace("[", "").replace("]", "").replaceAll(`"`, "").split(",")
-    // use the symmetry to cut down on calls
-    // we want something wide enough to carry one symmetry in all cases
-    let wideFactor = (width / 2 - 20) * Math.PI / Number(slider1) * 1.1
-    for (let prex = 0; prex < wideFactor; prex++) {
-      for (let prey = 0; prey < width / 2; prey++) {
-        // work outward from the center (for order of color purposes)
-        let x = 0
-        if (prex % 2 === 0) {
-          x = Math.abs(500 - prex)
-        } else {
-          x = 500 + prex
-        }
-        let y = 0 
-        if (prey % 2 === 0) {
-          y = Math.abs(500 - prey)
-        } else {
-          y = 500 + prey
-        }
-        // do this in symmetric points order
-        let symmetricPoints = getSymmetryPoints(x, y, width, slider1)
-        for (let [xx, yy] of symmetricPoints) {
-          xx = Math.floor(xx)
-          yy = Math.floor(yy)
-          const i = (yy * width + xx) * 4
-          if (isWhite({r: bgdata[i], g: bgdata[i + 1], b: bgdata[i + 2], a: 255})) {
-            let allcoords = getAdjacentWhite(bgdata, xx, yy, width, width, radioValue)
-            if (allcoords.length > 0) {
-              let exclusion = false
-              for (const [x, y] of allcoords) {
-                // don't use the edge areas
-                if ((x === 0 && (y === 0 || y === width - 1)) || (x === width - 1 && (y === 0 || y === width - 1))) {
-                  exclusion = true
-                }
-                const j = (y * width + x) * 4
-                bgdata[j]     = 0
-                bgdata[j + 1] = 0
-                bgdata[j + 2] = 0
-                bgdata[j + 3] = 255
-              }
-              if (!exclusion) {
-                fillableAreas.push(allcoords)
-              }
-            }
-          }
-        }
-      }
-      console.log("done")
-    }
-    // then step through fillable areas
-    const img2 = ctx.getImageData(0, 0, width, width)
-    const data = img2.data
-    for (let i = 0; i < fillableAreas.length; i++) {
-      let usecolor = hexToRgb(palArr[palLocn])
-      palLocn = palLocn + 1
-      if (palLocn >= palArr.length || palLocn >= slider3) palLocn = 0
-      for (let j = 0; j < fillableAreas[i].length; j++) {
-        if (!fillableAreas[i][j]) continue
-        let x = fillableAreas[i][j][0]
-        let y = fillableAreas[i][j][1]
-        const k = (y * width + x) * 4
-        data[k]     = usecolor.r
-        data[k + 1] = usecolor.g
-        data[k + 2] = usecolor.b
-        data[k + 3] = 255
-      }
-    }
-    ctx.putImageData(img2, 0, 0)
   }
 
   function drawLine(x1, y1, x2, y2) {
@@ -394,7 +317,7 @@ function JustMandala() {
         <Button onClick={randomDraw}>Random Mandala</Button>
       </div>
       <div style={{display: 'inline-block', marginLeft: '20px'}}>
-        <Button onClick={autoFill}>Automatically Fill Areas</Button>
+        <Button onClick={() => {autoFill(ctxRef, width, myPalette, slider1, radioValue)}}>Automatically Fill Areas</Button>
       </div>
     </Col></Row><Row><Col className='text-center'>
     <h2>Choose fill behavior:</h2>
