@@ -77,9 +77,6 @@ function JustMandala() {
     }
   }
 
-  // that's kind of a kludge, there's already a useEffect for myPalette in ColorChooser why isn't it updating?
-  useEffect(() => {setMyLightDark(myLightDark === 0 ? 1 : 0)}, [myPalette])
-
   return (
     <>
       <div data-bs-theme={'dark'} className="justify-content-center align-items-center min-vh-100">

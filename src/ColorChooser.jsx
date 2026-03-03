@@ -5,7 +5,7 @@ import { HexColorPicker } from 'react-colorful'
 function ColorChooser({ myPalette, setMyPalette, myLightDark, handleFileInput, setCurrentColor, skipPalButton}) {
 
   const [selectedColor, setSelectedColor] = useState(0)
-  const [borderColor, setBorderColor] = useState('white')  
+  const [borderColor, setBorderColor] = useState('white')
   const colors = useRef([
     "#68840D",
     "#4BB329",
@@ -33,6 +33,9 @@ function ColorChooser({ myPalette, setMyPalette, myLightDark, handleFileInput, s
     "#06B1E0",
     "#1F1572"
   ])
+  const [colorHelper, setColorHelper] = useState([...colors.current])  
+
+  useEffect(() => {colors.current = [...colorHelper]}, [colorHelper])
 
   const fileInputRef = useRef()
   const newSelectColor = (idx) => {
@@ -63,13 +66,13 @@ function ColorChooser({ myPalette, setMyPalette, myLightDark, handleFileInput, s
             }
         }
         if (anyUpdate) {
-            colors.current = prevColors
+            setColorHelper(prevColors)
         }
     }
   }, [myPalette])
 
   const updateColor = (index, newColor) => {
-    colors.current = colors.current.map((color, i) => (i === index ? newColor : color))
+    setColorHelper(colors.current.map((color, i) => (i === index ? newColor : color)))
     if (setCurrentColor) {
       setCurrentColor(newColor)
     }
@@ -90,6 +93,18 @@ function ColorChooser({ myPalette, setMyPalette, myLightDark, handleFileInput, s
     }
   }, [myLightDark])
 
+  // set the color on startup
+  useEffect( () => {
+    // if myPalette is set to nothing, some things could interpret that as all black
+    // always make sure myPalette is set to something (this will ding the URL)
+    if (!myPalette) {
+      resetPalette()
+    }
+    if (setCurrentColor) {
+      setCurrentColor(colors.current[0])
+    }
+  }, [])
+
   return <>
     <h1>Select Mandala Colors:</h1>
     <Row className="justify-content-center">
@@ -98,15 +113,15 @@ function ColorChooser({ myPalette, setMyPalette, myLightDark, handleFileInput, s
             <HexColorPicker
               data-testid="color-picker"
               style={{height: '200px', width: '200px'}}
-              color={colors.current[selectedColor]}
+              color={colorHelper[selectedColor]}
               onChange={(newColor) => updateColor(selectedColor, newColor)}
             />
-            <div key={`swatch-selector`} style={{backgroundColor: colors.current[selectedColor], height: "40px", width: "200px", marginBottom: "10px"}} >  </div>
+            <div key={`swatch-selector`} style={{backgroundColor: colorHelper[selectedColor], height: "40px", width: "200px", marginBottom: "10px"}} >  </div>
           </div>
       </Col>
       <Col>
         <Row id='colorgrid' style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "10px" }}>
-          {colors.current.map((color, index) => (
+          {colorHelper.map((color, index) => (
             <Col key={`colorbuttonholder-${index}`}>
             <Button key={`ColorButtons-${index}`} onClick={() => newSelectColor(index)} style={{backgroundColor: color, width: ((index == selectedColor) && `60px`) || '50px', 
               height: ((index == selectedColor) && `60px`) || '50px', border: ((index == selectedColor) && `6px solid ${borderColor}`) || ('0px'), marginBottom: "10px"}} />
