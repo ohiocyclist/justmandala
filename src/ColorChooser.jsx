@@ -6,7 +6,7 @@ function ColorChooser({ myPalette, setMyPalette, myLightDark, handleFileInput, s
 
   const [selectedColor, setSelectedColor] = useState(0)
   const [borderColor, setBorderColor] = useState('white')  
-  const [colors, setColors] = useState([
+  const colors = useRef([
     "#68840D",
     "#4BB329",
     "#993030",
@@ -38,7 +38,7 @@ function ColorChooser({ myPalette, setMyPalette, myLightDark, handleFileInput, s
   const newSelectColor = (idx) => {
     setSelectedColor(idx)
     if (setCurrentColor) {
-      setCurrentColor(colors[idx])
+      setCurrentColor(colors.current[idx])
     }
     if (skipPalButton) {
       resetPalette()
@@ -52,7 +52,7 @@ function ColorChooser({ myPalette, setMyPalette, myLightDark, handleFileInput, s
             usePalette = usePalette.substring(1, usePalette.length - 1)
         }
         usePalette = JSON.parse(usePalette)
-        let prevColors = colors
+        let prevColors = [...colors.current]
         let anyUpdate = false
         for (let i = 0; i < 25; i++) {
             if (i < usePalette.length) {
@@ -63,22 +63,21 @@ function ColorChooser({ myPalette, setMyPalette, myLightDark, handleFileInput, s
             }
         }
         if (anyUpdate) {
-            setColors(prevColors)
+            colors.current = prevColors
         }
     }
   }, [myPalette])
 
   const updateColor = (index, newColor) => {
-    setColors((prevColors) =>
-      prevColors.map((color, i) => (i === index ? newColor : color))
-    )
+    colors.current = colors.current.map((color, i) => (i === index ? newColor : color))
     if (setCurrentColor) {
       setCurrentColor(newColor)
     }
+    resetPalette()
   }
 
   const resetPalette = () => {
-    let newvals = JSON.stringify(colors)
+    let newvals = JSON.stringify(colors.current)
     newvals = encodeURIComponent(newvals)
     setMyPalette(newvals)
   }
@@ -91,31 +90,23 @@ function ColorChooser({ myPalette, setMyPalette, myLightDark, handleFileInput, s
     }
   }, [myLightDark])
 
-  useEffect( () => {
-    if (setCurrentColor) {
-      setCurrentColor(colors[0])
-    }
-    if (skipPalButton) {
-      resetPalette()
-    }
-  }, [colors])
-
   return <>
     <h1>Select Mandala Colors:</h1>
     <Row className="justify-content-center">
       <Col>
           <div key='swatch' style={{ width: "210px", height: "230px", marginTop: "20px" }}>
             <HexColorPicker
+              data-testid="color-picker"
               style={{height: '200px', width: '200px'}}
-              color={colors[selectedColor]}
+              color={colors.current[selectedColor]}
               onChange={(newColor) => updateColor(selectedColor, newColor)}
             />
-            <div key={`swatch-selector`} style={{backgroundColor: colors[selectedColor], height: "40px", width: "200px", marginBottom: "10px"}} >  </div>
+            <div key={`swatch-selector`} style={{backgroundColor: colors.current[selectedColor], height: "40px", width: "200px", marginBottom: "10px"}} >  </div>
           </div>
       </Col>
       <Col>
         <Row id='colorgrid' style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "10px" }}>
-          {colors.map((color, index) => (
+          {colors.current.map((color, index) => (
             <Col key={`colorbuttonholder-${index}`}>
             <Button key={`ColorButtons-${index}`} onClick={() => newSelectColor(index)} style={{backgroundColor: color, width: ((index == selectedColor) && `60px`) || '50px', 
               height: ((index == selectedColor) && `60px`) || '50px', border: ((index == selectedColor) && `6px solid ${borderColor}`) || ('0px'), marginBottom: "10px"}} />
@@ -126,9 +117,9 @@ function ColorChooser({ myPalette, setMyPalette, myLightDark, handleFileInput, s
     </Row>
     {!skipPalButton && <Button onClick={resetPalette}>Update Palette</Button>  }
     <Row className="justify-content-center">
-      <Form.Label><h3>Choose Colors from a file:</h3></Form.Label>
+      <Form.Label htmlFor="file-input"><h3>Choose Colors from a file:</h3></Form.Label>
       <div style={{ textAlign: 'center', width: '80%'}} >
-        <Form.Control accept="image/jpeg,image/png" onChange={handleFileInput} multiple={false} ref={fileInputRef}
+        <Form.Control id="file-input" accept="image/jpeg,image/png" onChange={handleFileInput} multiple={false} ref={fileInputRef}
             type={'file'} style={{display: 'inline-block', marginLeft: '8%', marginRight: '20%' }} className="form-control" />
       </div>
     </Row>

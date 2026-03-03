@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react'
 import * as d3 from "d3"
 import { useQueryParam, StringParam, withDefault, NumberParam } from 'use-query-params'
-import { Button, Form, Container, Row, Col, ToggleButtonGroup, ToggleButton } from 'react-bootstrap'
-import ColorChooser from './ColorChooser'
-import { MandalaLib } from './mandalalibraries'
+import { Container, Row, Col } from 'react-bootstrap'
 import "bootstrap/dist/css/bootstrap.min.css"
 import fill from './fill'
-import autoFill from './autoFill'
-import { getLocalCoordinates, getSymmetryPoints, hexToRgb, isWhite, getAdjacentWhite } from './getlocalcoordinates'
+import { draw } from './draw'
+import { MandalaControls } from './MandalaControls'
 
 
 function JustMandala() {
@@ -27,13 +25,13 @@ function JustMandala() {
   const [currentColor, setCurrentColor] = useState('')
   const fillDefault = withDefault(StringParam, 'fillAll')
   const [radioValue, setRadioValue] = useQueryParam('fillstyle', fillDefault)
+  const prevXY = useRef([])
 
-  var ctx, prevX, prevY
   let color = currentColor
   const width = 1200
-  let xCenter = width / 2
 
   const resetCanvas = () => {
+    let ctx
     d3.select(chartRef.current).selectAll("canvas").remove()
     let canvas = document.createElement('canvas')
     canvas.width = width
@@ -75,199 +73,9 @@ function JustMandala() {
     if (event.ctrlKey) {
       fill(event, chartRef, ctxRef, color, width, slider1, radioValue)
     } else {
-      draw(event)
+      draw(event, chartRef, ctxRef, width, slider1, slider2, color, prevXY.current)
     }
   }
-
-  function drawLine(x1, y1, x2, y2) {
-    let startPoints = getSymmetryPoints(x1, y1, width, slider1)
-    let endPoints = getSymmetryPoints(x2, y2, width, slider1)
-
-    for (var i = 0; i < startPoints.length; i++) {
-      ctx = ctxRef.current
-      ctx.beginPath()
-      ctx.imageSmoothingEnabled = false
-      ctx.lineWidth = Number(slider2)
-      ctx.strokeStyle = color
-      ctx.lineCap = "round"
-      ctx.moveTo(Math.floor(startPoints[i][0]), Math.floor(startPoints[i][1]))
-      ctx.lineTo(Math.floor(endPoints[i][0]), Math.floor(endPoints[i][1]))
-      ctx.stroke()
-    }
-
-    ctx.stroke();
-  }
-
-  function draw(e) {
-    var coord = getLocalCoordinates(e, chartRef);
-    // console.log(" getLocalCoordinates[0] " + coord[0]);
-
-    var x = coord[0];
-    var y = coord[1];
-
-    // (2 * Math.PI) / 16
-
-    ctx = ctxRef.current
-    ctx.strokeStyle = color
-    ctx.lineWidth = Number(slider2)
-
-    if (e.buttons == 1) {
-      drawLine(prevX, prevY, x, y)
-    } else if (e.type == "click") {
-      prevX = x
-      prevY = y
-      drawLine(prevX, prevY, x, y)
-    }
-    prevX = x
-    prevY = y
-  }
-
-  function randomDraw() {
-    let ctx = ctxRef.current
-    let holdColor = color
-    // the user can draw the outline in any color they like but autodraw is black
-    color = 'black'
-    if (ctx) {
-      // four styles of random mandala
-      let randNum = Math.random()
-      if (randNum < 0.2) {
-        // spiral style
-        ctx.strokeStyle = color
-        let endx = xCenter
-        let endy = xCenter
-        let angle = 0
-        for (let i = 0; i < 6; i++) {
-          // draw the center and then move out a bit
-          if (i === 1 || i === 2) {
-            continue
-          }
-          let step = (i + 1) * 30 + (i + 1) * 10 * Math.random()
-          let startx = 0
-          let starty = 0
-          if (angle === 0) {
-            startx = endx + step
-            starty = endy - step
-            angle = 1
-          } else if (angle === 1) {
-            startx = endx - step
-            starty = endy - step
-            angle = 2
-          } else if (angle === 2) {
-            startx = endx - step
-            starty = endy + step
-            angle = 3
-          } else if (angle === 3) {
-            startx = endx + step
-            starty = endy + step
-            angle = 0
-          }
-          // spliney
-          let curx = startx
-          let cury = starty
-          let stepup = 20
-          for (let j = 0; j < stepup; j++) {
-            let pi = Math.PI
-            let curendx = startx + step * Math.cos(pi * j / stepup)
-            let curendy = starty - step * Math.sin(pi * j / stepup)
-            drawLine(curx, cury, curendx, curendy)
-            curx = curendx
-            cury = curendy
-          }
-          endx = startx
-          endy = starty
-        }
-      } else if (Math.random() < 0.2) {
-        // just a bunch of straight lines style
-        ctx.strokeStyle = color
-        let offset = 40 * Math.random()
-        drawLine(offset, xCenter - offset, xCenter, xCenter - offset)
-        for (let i = 0; i < 4; i++) {
-          let usei = i
-          // add another inner layer between 0 and 1
-          if (i === 3) {
-            usei = 0.5
-          }
-          let startx = xCenter - (usei + 1) * (xCenter / 4) * (0.8 + 0.2 * Math.random())
-          // push out the inner layers to touch the next layer
-          let starty = startx - offset
-          if (i === 2) {
-              starty = startx
-          }
-          drawLine(startx, starty, startx + offset, Math.abs(width - starty))
-        }
-      } else if (Math.random() < 0.5) {
-        // interlocking crossing lines style
-        let workfactor = 12
-        let ifactor = 2
-        let startx = 0
-        let starty = 0
-        for(let i = 0; i < workfactor - 3; i++) {
-          ctx.strokeStyle = color
-          // draw in the center to start, then push towards the edges
-          let useifactor = 0
-          let endx = 0
-          let endy = 0
-          if (i === 0) {
-            useifactor = 1
-            endx = xCenter - (i + useifactor - 1) * xCenter / (workfactor + ifactor)
-            endy = xCenter - Math.random() * (i + useifactor) * xCenter / ( 0.4 * (workfactor + ifactor))
-          } else {
-            useifactor = ifactor
-            endx = startx
-            endy = starty
-          }
-          startx = xCenter - ((i + ifactor) * xCenter / (workfactor + ifactor)) / 2 + Math.random() * (i + ifactor) * xCenter / (workfactor + ifactor)
-          starty = xCenter - (i + useifactor) * xCenter / (workfactor + ifactor) - Math.random() * (i + useifactor) * xCenter / (2 * (workfactor + ifactor))
-          let edgekeep = 40
-          if (endy < edgekeep) {
-            endy = edgekeep
-          }
-          if (endy > width - edgekeep) {
-            endy = width - edgekeep
-          }
-          drawLine(startx, starty, endx, endy)
-        }
-      } else {
-        // push from the edge to the center style
-        let yLocn = 20
-        let xLocn = xCenter
-        let yStep = 12
-        let currentStart = [xCenter, 5]
-        // vary the step size for a more organic feel
-        let stepSize = 0.25
-        for(yLocn; yLocn < xCenter - 5; yLocn += yStep * 2 * Math.random() - yStep / 6) {
-          let wideFactor = (xCenter - yLocn) * 2 * Math.PI / Number(slider1) * 1.5
-          xLocn = xLocn - wideFactor * stepSize / 2 + wideFactor * stepSize * Math.random()
-          if (stepSize === 1) {
-            stepSize = 0.03
-          } else if (stepSize === 0.03) {
-            stepSize = 0.05
-          } else if (stepSize === 0.05) {
-            stepSize = 0.07
-          } else if (stepSize === 0.07) {
-            stepSize = 0.1
-          } else if (stepSize === 0.1) {
-            stepSize = 0.15
-          } else if (stepSize === 0.15) {
-            stepSize = 0.2
-          } else if (stepSize === 0.2) {
-            stepSize = 0.25
-          } else {
-            stepSize = 1
-          }
-          // prevent wandering to the edges
-          if (Math.abs(xCenter - xLocn) > 1.1 * Math.abs(yLocn - xCenter)) {
-            xLocn = xCenter
-          }
-          ctx.strokeStyle = color
-          drawLine(currentStart[0], currentStart[1], xLocn, yLocn)
-          currentStart = [xLocn, yLocn]
-        }
-      }
-    }
-    color = holdColor
-  }
-
 
   // that's kind of a kludge, there's already a useEffect for myPalette in ColorChooser why isn't it updating?
   useEffect(() => {setMyLightDark(myLightDark === 0 ? 1 : 0)}, [myPalette])
@@ -278,71 +86,16 @@ function JustMandala() {
       <Container>
       <Row>
       <Col className='text-center'>
-      <h1>Symmetry Based Mandalas</h1>
-    <Form>
-      <Form.Label className="text-white" htmlFor="slider1">Symmetry Degree: {slider1}</Form.Label>
-      <Form.Range
-          id={"slider1"}
-          min={2}
-          max={50}
-          value={slider1}
-          onChange={(e) => handleSlider1Change(e)}
+      <MandalaControls slider1={slider1} handleSlider1Change={handleSlider1Change} slider2={slider2} handleSlider2Change={handleSlider2Change}
+        slider3={slider3} handleSlider3Change={handleSlider3Change} myLightDark={myLightDark} myPalette={myPalette} setMyPalette={setMyPalette}
+        setCurrentColor={setCurrentColor} toastId={toastId} resetCanvas={resetCanvas} ctxRef={ctxRef} color={color} width={width}
+        radioValue={radioValue} handleRadioChange={handleRadioChange}
       />
-      <Form.Label className="text-white" htmlFor="slider2">Brush Size: {slider2}</Form.Label>
-      <Form.Range
-          id={"slider2"}
-          min={2}
-          max={24}
-          value={slider2}
-          onChange={(e) => handleSlider2Change(e)}
-      />      
-      <Form.Label className="text-white" htmlFor="slider3">Auto Fill Pattern Repeat: {slider3}</Form.Label>
-      <Form.Range
-          id={"slider3"}
-          min={2}
-          max={25}
-          value={slider3}
-          onChange={(e) => handleSlider3Change(e)}
-      />      
-    </Form>
-      </Col></Row><Row><Col className='text-center'>
-    <h2>Click and drag to draw, Control-Click to fill</h2>
-    <ColorChooser myLightDark={myLightDark} myPalette={myPalette} setMyPalette={setMyPalette} setCurrentColor={setCurrentColor} skipPalButton={true}
-      handleFileInput={(event) => {return MandalaLib.handleFileInput(event, toastId, myPalette, setMyPalette, myLightDark)}} />
-    </Col></Row><Row><Col className='text-center'>
-      <div style={{display: 'inline-block'}}>
-        <Button onClick={resetCanvas}>Reset Canvas</Button> 
-      </div>
-      <div style={{display: 'inline-block', marginLeft: '20px'}}>
-        <Button onClick={randomDraw}>Random Mandala</Button>
-      </div>
-      <div style={{display: 'inline-block', marginLeft: '20px'}}>
-        <Button onClick={() => {autoFill(ctxRef, width, myPalette, slider1, radioValue)}}>Automatically Fill Areas</Button>
-      </div>
-    </Col></Row><Row><Col className='text-center'>
-    <h2>Choose fill behavior:</h2>
-    <ToggleButtonGroup type="radio" name="radioGroup" defaultValue="fillAll" onChange={handleRadioChange}>
-      <ToggleButton
-        id="allselect"
-        value="fillAll"
-        variant="outline-primary">
-      Color all symmetrical</ToggleButton>
-      <ToggleButton
-        id="halfselect"
-        value="fillHalf"
-        variant="outline-primary">
-      Color every other symmetrical</ToggleButton>
-      <ToggleButton
-        id="oneselect"
-        value="fillOne"
-        variant="outline-primary">
-      Color One</ToggleButton>
-    </ToggleButtonGroup>
       <div
           id="drawCanvas"
           ref={chartRef}
           onMouseMove={overDraw}
-          onTouchStart={draw}
+          onTouchStart={() => {draw(event, chartRef, ctxRef, width, slider1, slider2, color, prevXY.current)}}
           onClick={overDraw}
           style={{width: '1200px', height: '1200px', backgroundColor: 'white', marginTop: '20px'}}
       >

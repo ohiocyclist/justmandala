@@ -53,7 +53,7 @@ export function getFillableAreas(width, slider1, bgdata, fillableAreas, radioVal
   }        
 }
 
-export function stepThroughFillables(img2, fillableAreas, palArr, width) {
+export function stepThroughFillables(img2, fillableAreas, palArr, width, slider3) {
   // fillableAreas is an array of arrays of points that represent areas to fill in
   // in color stepping order (of palArr)
   const data = img2.data
@@ -75,7 +75,7 @@ export function stepThroughFillables(img2, fillableAreas, palArr, width) {
   }  
 }
 
-export default function autoFill(ctxRef, width, myPalette, slider1, radioValue) {
+export default function autoFill(ctxRef, width, myPalette, slider1, slider3, radioValue) {
   // first, traverse the entire image and find all the fillable areas
   const fillableAreas = []
   const ctx = ctxRef.current
@@ -86,7 +86,7 @@ export default function autoFill(ctxRef, width, myPalette, slider1, radioValue) 
   getFillableAreas(width, slider1, bgdata, fillableAreas, radioValue)
   // then step through fillable areas
   const img2 = ctx.getImageData(0, 0, width, width)
-  stepThroughFillables(img2, fillableAreas, palArr, width)
+  stepThroughFillables(img2, fillableAreas, palArr, width, slider3)
   ctx.putImageData(img2, 0, 0)
   //console.log("done")
 }

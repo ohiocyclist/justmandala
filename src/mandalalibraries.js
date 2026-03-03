@@ -159,7 +159,6 @@ export class MandalaLib {
           }
           newPalette = encodeURIComponent(newPalette)
           if (newPalette !== myPalette) {
-            console.log("resetting palette from color chooser")
             setMyPalette(newPalette)
           }
 
