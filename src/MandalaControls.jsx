@@ -2,14 +2,13 @@ import React from 'react'
 import { Button, Form, Row, Col, ToggleButtonGroup, ToggleButton } from 'react-bootstrap'
 import { MandalaLib } from './mandalalibraries'
 import ColorChooser from './ColorChooser'
-import autoFill from './autoFill'
+import { autoFill } from './autoFill'
 import { randomDraw} from './draw'
 
 export function MandalaControls({slider1, handleSlider1Change, slider2, handleSlider2Change, slider3, handleSlider3Change, myLightDark, myPalette, setMyPalette, setCurrentColor,
     toastId, resetCanvas, ctxRef, color, width, radioValue, handleRadioChange}) {
     return <>
     <Row><Col className='text-center'>
-      <h1>Symmetry Based Mandalas</h1>
     <Form>
       <Form.Label className="text-white" htmlFor="slider1">Symmetry Degree: {slider1}</Form.Label>
       <Form.Range
@@ -48,7 +47,7 @@ export function MandalaControls({slider1, handleSlider1Change, slider2, handleSl
         <Button onClick={() => {randomDraw(width, slider1, slider2, ctxRef, color)}}>Random Mandala</Button>
       </div>
       <div style={{display: 'inline-block', marginLeft: '20px'}}>
-        <Button onClick={() => {autoFill(ctxRef, width, myPalette, slider1, slider3, radioValue)}}>Automatically Fill Areas</Button>
+        <Button onClick={() => {autoFill.autoFill(ctxRef, width, myPalette, slider1, slider3, radioValue)}}>Automatically Fill Areas</Button>
       </div>
     </Col></Row><Row><Col className='text-center'>
     <h2>Choose fill behavior:</h2>

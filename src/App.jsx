@@ -5,6 +5,7 @@ import { Container, Row, Col } from 'react-bootstrap'
 import "bootstrap/dist/css/bootstrap.min.css"
 import fill from './fill'
 import { draw } from './draw'
+import Collapse from 'react-bootstrap/Collapse'
 import { MandalaControls } from './MandalaControls'
 
 
@@ -26,9 +27,12 @@ function JustMandala() {
   const fillDefault = withDefault(StringParam, 'fillAll')
   const [radioValue, setRadioValue] = useQueryParam('fillstyle', fillDefault)
   const prevXY = useRef([])
+  const [open, setOpen] = useState(false)
 
   let color = currentColor
-  const width = 1200
+  // width is square for width and height so setting to height on a landscape
+  // display is correct
+  const width = window.innerHeight - 100
 
   const resetCanvas = () => {
     let ctx
@@ -82,19 +86,30 @@ function JustMandala() {
       <div data-bs-theme={'dark'} className="justify-content-center align-items-center min-vh-100">
       <Container>
       <Row>
-      <Col className='text-center'>
+        <Col className='text-center'>
+        <h1>Symmetry Based Mandalas</h1>
+        </Col></Row><Row>
+      <Col className='text-end'>
+      <button onClick={() => setOpen(!open)}>{open ? "Hide" : "Show"} Controls</button>
+      </Col></Row><Collapse in={open}>
+        <div id="control-drawer">
+      <Row><Col className='text-center'>
       <MandalaControls slider1={slider1} handleSlider1Change={handleSlider1Change} slider2={slider2} handleSlider2Change={handleSlider2Change}
         slider3={slider3} handleSlider3Change={handleSlider3Change} myLightDark={myLightDark} myPalette={myPalette} setMyPalette={setMyPalette}
         setCurrentColor={setCurrentColor} toastId={toastId} resetCanvas={resetCanvas} ctxRef={ctxRef} color={color} width={width}
         radioValue={radioValue} handleRadioChange={handleRadioChange}
       />
+      </Col></Row>
+      </div></Collapse>
+      <Row><Col className='text-center'>
       <div
           id="drawCanvas"
           ref={chartRef}
           onMouseMove={overDraw}
           onTouchStart={() => {draw(event, chartRef, ctxRef, width, slider1, slider2, color, prevXY.current)}}
           onClick={overDraw}
-          style={{width: '1200px', height: '1200px', backgroundColor: 'white', marginTop: '20px'}}
+          className="mx-auto"
+          style={{width: `${width}px`, height: `${width}px`, backgroundColor: 'white', marginTop: '20px', display: 'block'}}
       >
       </div>
     </Col>

@@ -1,4 +1,6 @@
-export function getLocalCoordinates(ev, chartRef) {
+export class getMandalaHelpers {
+
+  static getLocalCoordinates = (ev, chartRef) => {
     if (ev.type == "touchstart") {
       var touch = ev.touches[0] || ev.changedTouches[0]
       var realTarget = document.elementFromPoint(touch.clientX, touch.clientY)
@@ -9,7 +11,7 @@ export function getLocalCoordinates(ev, chartRef) {
     return [ev.clientX - rect.left + 0.5, ev.clientY - rect.top + 0.5]
   }
 
-export function getSymmetryPoints(x, y, width, slider1, extraMirror=true) {
+  static getSymmetryPoints = (x, y, width, slider1, extraMirror=true) => {
     // The coordinate system has its origin at the center of the canvas,
     // has up as 0 degrees, right as 90 deg, down as 180 deg, and left as 270 deg.
     var ctrX = width / 2
@@ -34,7 +36,7 @@ export function getSymmetryPoints(x, y, width, slider1, extraMirror=true) {
     return result
   }
 
-export function hexToRgb(hex) {
+  static hexToRgb = (hex) => {
       hex = hex.replace(/^#/, "");
 
       // expand shorthand #fff → #ffffff
@@ -51,11 +53,11 @@ export function hexToRgb(hex) {
       };
   }
 
-export function isWhite({ r, g, b, a }) {
+  static isWhite = ({ r, g, b, a }) => {
     return r > 215 && g > 215 && b > 215
   }
 
-export function getAdjacentWhite(data, startX, startY, width, height, radioValue) {
+  static getAdjacentWhite = (data, startX, startY, width, height, radioValue) => {
       const stack = [[startX, startY]]
       const visited = new Set()
       const result = []
@@ -82,7 +84,7 @@ export function getAdjacentWhite(data, startX, startY, width, height, radioValue
             //console.log(data[i], startingcolor.r, data[i + 1], startingcolor.g, data[i + 2], startingcolor.b)
             if (data[i] != startingcolor.r || data[i + 1] != startingcolor.g || data[i + 2] != startingcolor.b) continue
           } else {
-            if (!isWhite({r: data[i], g: data[i + 1], b: data[i + 2], a: 255})) continue
+            if (!this.isWhite({r: data[i], g: data[i + 1], b: data[i + 2], a: 255})) continue
           }
 
           result.push([x, y])
@@ -97,3 +99,4 @@ export function getAdjacentWhite(data, startX, startY, width, height, radioValue
       return result
   }
   
+}

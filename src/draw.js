@@ -1,4 +1,4 @@
-import { getLocalCoordinates, getSymmetryPoints } from './getlocalcoordinates'
+import { getMandalaHelpers } from './getlocalcoordinates'
 
 const linspace = (start, end, num) => {
     const step = (end - start) / (num)
@@ -6,8 +6,8 @@ const linspace = (start, end, num) => {
 }
 
 export function drawLine(x1, y1, x2, y2, ctxRef, width, slider1, slider2, color, nosym=false, extraMirror=true) {
-    let startPoints = getSymmetryPoints(x1, y1, width, slider1, extraMirror)
-    let endPoints = getSymmetryPoints(x2, y2, width, slider1, extraMirror)
+    let startPoints = getMandalaHelpers.getSymmetryPoints(x1, y1, width, slider1, extraMirror)
+    let endPoints = getMandalaHelpers.getSymmetryPoints(x2, y2, width, slider1, extraMirror)
 
     // testing only, only draw one side
     if (nosym) {
@@ -31,7 +31,7 @@ export function drawLine(x1, y1, x2, y2, ctxRef, width, slider1, slider2, color,
   }
 
 export function draw(e, chartRef, ctxRef, width, slider1, slider2, color, prevXY) {
-    var coord = getLocalCoordinates(e, chartRef);
+    var coord = getMandalaHelpers.getLocalCoordinates(e, chartRef);
     // console.log(" getLocalCoordinates[0] " + coord[0]);
 
     var x = coord[0];
