@@ -1,8 +1,19 @@
 import { getLocalCoordinates, getSymmetryPoints } from './getlocalcoordinates'
 
-export function drawLine(x1, y1, x2, y2, ctxRef, width, slider1, slider2, color) {
-    let startPoints = getSymmetryPoints(x1, y1, width, slider1)
-    let endPoints = getSymmetryPoints(x2, y2, width, slider1)
+const linspace = (start, end, num) => {
+    const step = (end - start) / (num)
+    return Array.from({ length: num }, (_, i) => start + i * step)
+}
+
+export function drawLine(x1, y1, x2, y2, ctxRef, width, slider1, slider2, color, nosym=false, extraMirror=true) {
+    let startPoints = getSymmetryPoints(x1, y1, width, slider1, extraMirror)
+    let endPoints = getSymmetryPoints(x2, y2, width, slider1, extraMirror)
+
+    // testing only, only draw one side
+    if (nosym) {
+      startPoints = [[x1, y1]]
+      endPoints = [[x2, y2]]
+    }
 
     let ctx = ctxRef.current
     for (var i = 0; i < startPoints.length; i++) {
@@ -43,6 +54,13 @@ export function draw(e, chartRef, ctxRef, width, slider1, slider2, color, prevXY
     prevXY[1] = y
   }
 
+function drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter) {
+  // do all the shifting to the center here
+  let extraMirror = false
+  let nosym = false
+  drawLine(xCenter - curx, xCenter - cury, xCenter - endx, xCenter - endy, ctxRef, width, slider1, slider2, color, nosym, extraMirror)
+}
+
 export function randomDraw(width, slider1, slider2, ctxRef, color) {
     let ctx = ctxRef.current
     let xCenter = width / 2
@@ -52,7 +70,116 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
     if (ctx) {
       // four styles of random mandala
       let randNum = Math.random()
-      if (randNum < 0.2) {
+      if (randNum < 0.3) {
+        ctx.strokeStyle = color
+        let endx = 0
+        let endy = 0
+        let scalefactor = 1.35
+        let allshrink = 0.6        
+        let levels = Math.floor(Math.random() * 7) + 4
+        let inners = Math.random() > 0.5
+        const mystride = 24
+        const starPoints = linspace(0, 2 * Math.PI, slider1 * mystride)
+        // roughly fill the canvas
+        const starScaleUp = Math.floor(xCenter * 6 / (Math.pow(levels, 2)))
+        const star_x = starPoints.map(x => starScaleUp * Math.cos(x))
+        const star_y = starPoints.map(x => starScaleUp * Math.sin(x))
+        let ap = star_x.map((x, i) => ({x: x, y: star_y[i]}))
+        let myxy = ap.filter((_, i) => i % mystride === 0)       
+        let mymxy = ap.filter((_, i) => i % mystride === mystride / 2).map((_, i, arr) => arr[(i - 1 + arr.length) % arr.length])       
+        let mypxy = ap.filter((_, i) => i % mystride === 0).map((_, i, arr) => arr[(i - 1 + arr.length) % arr.length])
+        let myfxy = ap.filter((_, i) => i % mystride === mystride / 2)
+        let mysifxy = ap.filter((_, i) => i % mystride === (5 * mystride) / 6).map((_, i, arr) => arr[(i - 1 + arr.length) % arr.length])  
+        let myxfxy = ap.filter((_, i) => i % mystride === mystride / 6).map((_, i, arr) => arr[(i - 1 + arr.length) % arr.length])   
+        let myspxy = ap.filter((_, i) => i % mystride === mystride / 3)                                                                 
+        let mysfxy = ap.filter((_, i) => i % mystride === (2 * mystride) / 3).map((_, i, arr) => arr[(i - 1 + arr.length) % arr.length])
+        let curx = 0
+        let cury = 0
+        let myrad = 1
+        let tapLevel = 0
+        for (let level = 0; level < levels; level++) {
+          let scaleup = level === 0 ? 0 : level === levels - 1 ? 1.05 : scalefactor
+          scaleup = scaleup * (level === 0 ? allshrink : 1) * (level === 1 ? 1/allshrink : 1)
+          let larr = Math.pow(scalefactor, level)
+          larr = larr * (level < 2 ? allshrink : 1)
+          let prevlar = level > 0 ? Math.pow(scalefactor, level - 1) : scalefactor
+          prevlar = prevlar * (level < 3 ? allshrink : 1)
+          let discount = level === levels - 1 ? 0.9 : 0.8
+          let tdiscount = level === levels - 1 ? 0.965 : 0.9
+          let xdiscount = level === levels - 1 ? 0.9 : 1
+          let zarr = larr * xdiscount        
+          if (level % 2 == 0) {
+            // fxy(rowx, rowy, level, (x) => ( [x[0] * larr, x[1] * myrad * prevlar, x[2] * larr, x[1] * larr * scaleup]), mypxy, mymxy, myxy)
+            curx = mypxy[tapLevel].x * larr
+            cury = mypxy[tapLevel].y * larr
+            if (level > 0) {
+              endx = mymxy[tapLevel].x * larr * scaleup
+              endy = mymxy[tapLevel].y * larr * scaleup
+            }
+            drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+            endx = mymxy[tapLevel].x * myrad * prevlar
+            endy = mymxy[tapLevel].y * myrad * prevlar
+            drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+            curx = myxy[tapLevel].x * larr
+            cury = myxy[tapLevel].y * larr
+            drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+            endx = mymxy[tapLevel].x * larr * scaleup
+            endy = mymxy[tapLevel].y * larr * scaleup
+            drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+            // fxy(rowix, rowiy, level, (x) => ( [x[0] * zarr, x[1] * myrad * prevlar / discount, x[2] * zarr, x[1] * larr * scaleup * tdiscount]), myxfxy, mymxy, mysifxy)
+            if (inners) {
+              curx = myxfxy[tapLevel].x * zarr
+              cury = myxfxy[tapLevel].y * zarr
+              endx = mymxy[tapLevel].x * larr * scaleup * tdiscount
+              endy = mymxy[tapLevel].y * larr * scaleup * tdiscount
+              drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+              endx = mymxy[tapLevel].x * myrad * prevlar / discount
+              endy = mymxy[tapLevel].y * myrad * prevlar / discount
+              drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+              curx = mysifxy[tapLevel].x * zarr
+              cury = mysifxy[tapLevel].y * zarr
+              drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+              endx = mymxy[tapLevel].x * larr * scaleup * tdiscount
+              endy = mymxy[tapLevel].y * larr * scaleup * tdiscount
+              drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+            }
+          } else {
+            // fxy(rowx, rowy, level, (x) => ( [x[0] * prevlar, x[1] * larr, x[0] * larr * scaleup, x[2] * larr]), myxy, mymxy, myfxy)
+            // first line needs both endpoints, and the other endpoint is the end of the last point
+            curx = myxy[tapLevel].x * prevlar
+            cury = myxy[tapLevel].y * prevlar
+            endx = myfxy[tapLevel].x * larr
+            endy = myfxy[tapLevel].y * larr
+            drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+            endx = mymxy[tapLevel].x * larr
+            endy = mymxy[tapLevel].y * larr
+            drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+            curx = myxy[tapLevel].x * larr * scaleup
+            cury = myxy[tapLevel].y * larr * scaleup
+            drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+            endx = myfxy[tapLevel].x * larr
+            endy = myfxy[tapLevel].y * larr
+            drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+            // fxy(rowix, rowiy, level, (x) => ( [x[0] * zarr, x[1] * myrad * prevlar / discount, x[2] * zarr, x[1] * larr * scaleup * tdiscount]), myspxy, myxy, mysfxy)
+            if (inners) {
+              curx = myspxy[tapLevel].x * zarr
+              cury = myspxy[tapLevel].y * zarr
+              endx = myxy[tapLevel].x * larr * scaleup * tdiscount
+              endy = myxy[tapLevel].y * larr * scaleup * tdiscount
+              drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+              endx = myxy[tapLevel].x * myrad * prevlar / discount
+              endy = myxy[tapLevel].y * myrad * prevlar / discount
+              drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+              curx = mysfxy[tapLevel].x * zarr
+              cury = mysfxy[tapLevel].y * zarr
+              drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+              endx = myxy[tapLevel].x * larr * scaleup * tdiscount
+              endy = myxy[tapLevel].y * larr * scaleup * tdiscount
+              drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+            }
+          }
+        }
+      } else if (randNum < 0.5) {
         // spiral style
         ctx.strokeStyle = color
         let endx = xCenter

@@ -9,7 +9,7 @@ export function getLocalCoordinates(ev, chartRef) {
     return [ev.clientX - rect.left + 0.5, ev.clientY - rect.top + 0.5]
   }
 
-export function getSymmetryPoints(x, y, width, slider1) {
+export function getSymmetryPoints(x, y, width, slider1, extraMirror=true) {
     // The coordinate system has its origin at the center of the canvas,
     // has up as 0 degrees, right as 90 deg, down as 180 deg, and left as 270 deg.
     var ctrX = width / 2
@@ -24,7 +24,8 @@ export function getSymmetryPoints(x, y, width, slider1) {
       x = ctrX + Math.sin(theta) * dist
       y = ctrY - Math.cos(theta) * dist
       result.push([x, y])
-      if (true) {
+      // put another left / right mirroring into the symmetry points
+      if (extraMirror) {
         x = ctrX - Math.sin(theta) * dist
         result.push([x, y])
       }
