@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import { getLocalCoordinates, getSymmetryPoints, hexToRgb, isWhite, getAdjacentWhite } from "../getlocalcoordinates.js";
+import { getMandalaHelpers } from "../getlocalcoordinates.js";
 
 describe("getLocalCoordinates", () => {
   let chartRef;
@@ -21,7 +21,7 @@ describe("getLocalCoordinates", () => {
 
   test("returns correct coordinates for mouse events", () => {
     const ev = { clientX: 150, clientY: 250, type: "mousemove" };
-    const result = getLocalCoordinates(ev, chartRef);
+    const result = getMandalaHelpers.getLocalCoordinates(ev, chartRef);
 
     expect(result).toEqual([50 + 0.5, 50 + 0.5]); // (150-100, 250-200)
   });
@@ -42,7 +42,7 @@ describe("getLocalCoordinates", () => {
       clientY: 300
     };
 
-    const result = getLocalCoordinates(ev, chartRef);
+    const result = getMandalaHelpers.getLocalCoordinates(ev, chartRef);
 
     expect(ev.offsetX).toBe(200 - 10);
     expect(ev.offsetY).toBe(300 - 20);
@@ -52,14 +52,14 @@ describe("getLocalCoordinates", () => {
 
 describe("getSymmetryPoints", () => {
   test("returns correct number of symmetry points", () => {
-    const pts = getSymmetryPoints(150, 150, 300, 4);
+    const pts = getMandalaHelpers.getSymmetryPoints(150, 150, 300, 4);
 
     // For each slice: 2 points (normal + mirrored)
     expect(pts.length).toBe(8);
   });
 
   test("points are symmetric around center", () => {
-    const pts = getSymmetryPoints(200, 150, 300, 2);
+    const pts = getMandalaHelpers.getSymmetryPoints(200, 150, 300, 2);
 
     const [p1, p2, p3, p4] = pts;
 
@@ -75,29 +75,29 @@ describe("getSymmetryPoints", () => {
 
 describe("hexToRgb", () => {
   test("converts full hex format", () => {
-    expect(hexToRgb("#ff8800")).toEqual({ r: 255, g: 136, b: 0 });
+    expect(getMandalaHelpers.hexToRgb("#ff8800")).toEqual({ r: 255, g: 136, b: 0 });
   });
 
   test("converts shorthand hex format", () => {
-    expect(hexToRgb("#fa3")).toEqual({ r: 255, g: 170, b: 51 });
+    expect(getMandalaHelpers.hexToRgb("#fa3")).toEqual({ r: 255, g: 170, b: 51 });
   });
 
   test("works without # prefix", () => {
-    expect(hexToRgb("00ff00")).toEqual({ r: 0, g: 255, b: 0 });
+    expect(getMandalaHelpers.hexToRgb("00ff00")).toEqual({ r: 0, g: 255, b: 0 });
   });
 });
 
 describe("isWhite", () => {
   test("returns true for white-ish values", () => {
-    expect(isWhite({ r: 220, g: 220, b: 220, a: 255 })).toBe(true);
+    expect(getMandalaHelpers.isWhite({ r: 220, g: 220, b: 220, a: 255 })).toBe(true);
   });
 
   test("returns false for darker values", () => {
-    expect(isWhite({ r: 200, g: 200, b: 200, a: 255 })).toBe(false);
+    expect(getMandalaHelpers.isWhite({ r: 200, g: 200, b: 200, a: 255 })).toBe(false);
   });
 
   test("ignores alpha channel", () => {
-    expect(isWhite({ r: 230, g: 230, b: 230, a: 0 })).toBe(true);
+    expect(getMandalaHelpers.isWhite({ r: 230, g: 230, b: 230, a: 0 })).toBe(true);
   });
 });
 
@@ -123,7 +123,7 @@ describe("getAdjacentWhite", () => {
       ...B, ...B, ...W, ...W,
     ];
 
-    const result = getAdjacentWhite(pixels, 0, 0, width, height, "white");
+    const result = getMandalaHelpers.getAdjacentWhite(pixels, 0, 0, width, height, "white");
 
     // Expect the top-left 2×2 block only
     expect(result).toEqual(
@@ -150,7 +150,7 @@ describe("getAdjacentWhite", () => {
       ...W, ...W, ...W,
     ];
 
-    const result = getAdjacentWhite(pixels, 0, 0, width, height, "white");
+    const result = getMandalaHelpers.getAdjacentWhite(pixels, 0, 0, width, height, "white");
 
     // Should NOT include the center pixel (1,1)
     expect(result).not.toContainEqual([1, 1]);
@@ -173,7 +173,7 @@ describe("getAdjacentWhite", () => {
       ...R, ...R, ...R,
     ];
 
-    const result = getAdjacentWhite(pixels, 0, 0, width, height, "fillOne");
+    const result = getMandalaHelpers.getAdjacentWhite(pixels, 0, 0, width, height, "fillOne");
 
     // Should include all red pixels but not the green center
     expect(result).not.toContainEqual([1, 1]);
@@ -189,7 +189,7 @@ describe("getAdjacentWhite", () => {
     //  W W
     const pixels = [...W, ...W, ...W, ...W];
 
-    const result = getAdjacentWhite(pixels, 0, 0, width, height, "white");
+    const result = getMandalaHelpers.getAdjacentWhite(pixels, 0, 0, width, height, "white");
 
     expect(result.length).toBe(4);
     expect(result).toEqual(
@@ -216,7 +216,7 @@ describe("getAdjacentWhite", () => {
       ...B, ...B, ...B,
     ];
 
-    const result = getAdjacentWhite(pixels, 1, 1, width, height, "white");
+    const result = getMandalaHelpers.getAdjacentWhite(pixels, 1, 1, width, height, "white");
 
     expect(result).toEqual([[1, 1]]);
   });

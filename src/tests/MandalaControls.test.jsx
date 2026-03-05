@@ -6,7 +6,7 @@ jest.mock('../draw', () => ({
   randomDraw: jest.fn(),
 }));
 
-jest.mock('../autoFill', () => jest.fn());
+//jest.mock('../autoFill', () => jest.fn());
 
 jest.mock('../mandalalibraries', () => ({
   MandalaLib: {
@@ -17,7 +17,7 @@ jest.mock('../mandalalibraries', () => ({
 jest.mock('../ColorChooser', () => () => <div data-testid="color-chooser" />);
 
 import { randomDraw } from '../draw';
-import autoFill from '../autoFill';
+import { autoFill } from '../autoFill';
 import { MandalaLib } from '../mandalalibraries';
 
 describe('MandalaControls', () => {
@@ -90,8 +90,10 @@ describe('MandalaControls', () => {
   it('calls autoFill when Automatically Fill Areas button is clicked', () => {
     render(<MandalaControls {...defaultProps} />);
 
+    jest.spyOn(autoFill, 'autoFill').mockReturnValue(true);    
+
     fireEvent.click(screen.getByText(/Automatically Fill Areas/i));
-    expect(autoFill).toHaveBeenCalledWith(
+    expect(autoFill.autoFill).toHaveBeenCalledWith(
       defaultProps.ctxRef,
       defaultProps.width,
       defaultProps.myPalette,

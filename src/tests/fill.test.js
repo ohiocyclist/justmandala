@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-jest.mock('../getlocalcoordinates.js', () => ({
+jest.mock('../getlocalcoordinates.js', () => ({getMandalaHelpers: {
   getLocalCoordinates: jest.fn(() => [3.2, 4.7]),
   getSymmetryPoints: jest.fn(() => [
       [3, 4],
@@ -17,10 +17,10 @@ jest.mock('../getlocalcoordinates.js', () => ({
       [4, 4],
       [3, 5]
     ])
-}))
+}}))
 
 import fill from '../fill.js'
-import { getLocalCoordinates, getSymmetryPoints, hexToRgb, isWhite, getAdjacentWhite } from '../getlocalcoordinates.js'
+import { getMandalaHelpers } from '../getlocalcoordinates.js'
 
 describe('fill()', () => {
   let ctx, mockImg, mockData
@@ -76,8 +76,8 @@ describe('fill()', () => {
 
   test('gets local coordinates and symmetry points', () => {
     fill(f, chartRef, ctxRef, color, width, slider1, radioValue)
-    expect(getLocalCoordinates).toHaveBeenCalled()
-    expect(getSymmetryPoints).toHaveBeenCalledWith(3, 4, width, slider1)
+    expect(getMandalaHelpers.getLocalCoordinates).toHaveBeenCalled()
+    expect(getMandalaHelpers.getSymmetryPoints).toHaveBeenCalledWith(3, 4, width, slider1)
   })
 
   test('fills all adjacent white pixels with chosen color', () => {
@@ -103,7 +103,7 @@ describe('fill()', () => {
 
     // getAdjacentWhite should be called only for idx % 4 == 0
     // with 4 symmetry points, only index 0 should run
-    expect(getAdjacentWhite).toHaveBeenCalledTimes(1)
-    expect(getAdjacentWhite).toHaveBeenCalledWith(mockData, 3, 4, 10, 10, radioValue)
+    expect(getMandalaHelpers.getAdjacentWhite).toHaveBeenCalledTimes(1)
+    expect(getMandalaHelpers.getAdjacentWhite).toHaveBeenCalledWith(mockData, 3, 4, 10, 10, radioValue)
   })
 })

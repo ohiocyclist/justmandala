@@ -1,11 +1,18 @@
 import { drawLine, draw, randomDraw } from '../draw';
-import { getLocalCoordinates, getSymmetryPoints } from '../getlocalcoordinates';
+import { getMandalaHelpers } from '../getlocalcoordinates';
 
-jest.mock('../getlocalcoordinates', () => ({
-  ...jest.requireActual('../getlocalcoordinates'),
-  getLocalCoordinates: jest.fn(),
-  getSymmetryPoints: jest.fn(),
-}));
+jest.mock('../getlocalcoordinates', () => {
+  const actual = jest.requireActual('../getlocalcoordinates.js');  
+  
+  return {
+    getMandalaHelpers: {
+      ...actual.getMandalaHelpers,
+      getLocalCoordinates: jest.fn(),
+      getSymmetryPoints: jest.fn(),
+      //getLocalCoordinates: actual.getMandalaHelpers.getLocalCoordinates
+    }
+  }
+});
 
 function mockCtx() {
   return {
@@ -25,14 +32,14 @@ describe('drawLine', () => {
     const ctx = mockCtx();
     const ctxRef = { current: ctx };
 
-    getSymmetryPoints.mockReturnValue([
+    getMandalaHelpers.getSymmetryPoints.mockReturnValue([
       [10, 20],
       [30, 40],
     ]);
 
     drawLine(0, 0, 100, 100, ctxRef, 200, 4, 2, 'red');
 
-    expect(getSymmetryPoints).toHaveBeenCalledTimes(2);
+    expect(getMandalaHelpers.getSymmetryPoints).toHaveBeenCalledTimes(2);
     expect(ctx.beginPath).toHaveBeenCalledTimes(2);
     expect(ctx.moveTo).toHaveBeenCalledTimes(2);
     expect(ctx.lineTo).toHaveBeenCalledTimes(2);
@@ -45,15 +52,15 @@ describe('draw', () => {
     const ctx = mockCtx();
     const ctxRef = { current: ctx };
 
-    getLocalCoordinates.mockReturnValue([50, 60]);
-    getSymmetryPoints.mockReturnValue([[50, 60]]);
+    getMandalaHelpers.getLocalCoordinates.mockReturnValue([50, 60]);
+    getMandalaHelpers.getSymmetryPoints.mockReturnValue([[50, 60]]);
 
     const prevXY = [10, 20];
     const event = { buttons: 1 };
 
     draw(event, {}, ctxRef, 200, 4, 2, 'blue', prevXY);
 
-    expect(getLocalCoordinates).toHaveBeenCalled();
+    expect(getMandalaHelpers.getLocalCoordinates).toHaveBeenCalled();
     expect(ctx.beginPath).toHaveBeenCalled();
     expect(ctx.moveTo).toHaveBeenCalled();
     expect(ctx.lineTo).toHaveBeenCalled();
@@ -63,8 +70,8 @@ describe('draw', () => {
     const ctx = mockCtx();
     const ctxRef = { current: ctx };
 
-    getLocalCoordinates.mockReturnValue([80, 90]);
-    getSymmetryPoints.mockReturnValue([[80, 90]]);
+    getMandalaHelpers.getLocalCoordinates.mockReturnValue([80, 90]);
+    getMandalaHelpers.getSymmetryPoints.mockReturnValue([[80, 90]]);
 
     const prevXY = [0, 0];
     const event = { type: 'click' };
@@ -83,7 +90,7 @@ describe('randomDraw', () => {
     // Force predictable randomness
     jest.spyOn(Math, 'random').mockReturnValue(0.1);
 
-    getSymmetryPoints.mockReturnValue([[10, 10]]);
+    getMandalaHelpers.getSymmetryPoints.mockReturnValue([[10, 10]]);
 
     expect(() =>
       randomDraw(200, 4, 2, ctxRef, 'purple')
