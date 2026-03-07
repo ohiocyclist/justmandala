@@ -19,7 +19,7 @@ function JustMandala() {
   const [slider2, setSlider2] = useQueryParam('Brushsize', slider2Default)
   const slider3Default = withDefault(NumberParam, 16)
   const [slider3, setSlider3] = useQueryParam('AutoRepeat', slider3Default)
-  const [myLightDark, setMyLightDark] = useState(0)
+  const myLightDark = 0
   const toastId = ''
   const paletteDefault = withDefault(StringParam,'')
   const [myPalette, setMyPalette] = useQueryParam('palette', paletteDefault)  
@@ -28,11 +28,12 @@ function JustMandala() {
   const [radioValue, setRadioValue] = useQueryParam('fillstyle', fillDefault)
   const prevXY = useRef([])
   const [open, setOpen] = useState(false)
+  const fileInputRef = useRef()  
 
   let color = currentColor
   // width is square for width and height so setting to height on a landscape
   // display is correct
-  const width = window.innerHeight - 100
+  const width = window.innerHeight - 120
 
   const resetCanvas = () => {
     let ctx
@@ -81,6 +82,23 @@ function JustMandala() {
     }
   }
 
+  const handleMandalaFileInput = async (event) => {
+    const selectedFile = event.target.files[0]
+
+    if (selectedFile) {
+      const reader = new FileReader()
+      
+      reader.onload = (e) => {
+        const img = new Image()
+        img.src = e.target.result
+        img.onload = () => {
+          ctxRef.current.drawImage(img, 0, 0, width, width)    
+        }      
+      }
+      reader.readAsDataURL(selectedFile);
+    }
+  }
+
   return (
     <>
       <div data-bs-theme={'dark'} className="justify-content-center align-items-center min-vh-100">
@@ -88,7 +106,7 @@ function JustMandala() {
       <Row>
         <Col className='text-center'>
         <h1>Symmetry Based Mandalas</h1>
-        </Col></Row><Row>
+        </Col></Row><Row><Col><p><font color="#FFF">Click and drag to draw, CTRL-click to fill, or</font></p></Col>
       <Col className='text-end'>
       <button onClick={() => setOpen(!open)}>{open ? "Hide" : "Show"} Controls</button>
       </Col></Row><Collapse in={open}>
@@ -97,7 +115,7 @@ function JustMandala() {
       <MandalaControls slider1={slider1} handleSlider1Change={handleSlider1Change} slider2={slider2} handleSlider2Change={handleSlider2Change}
         slider3={slider3} handleSlider3Change={handleSlider3Change} myLightDark={myLightDark} myPalette={myPalette} setMyPalette={setMyPalette}
         setCurrentColor={setCurrentColor} toastId={toastId} resetCanvas={resetCanvas} ctxRef={ctxRef} color={color} width={width}
-        radioValue={radioValue} handleRadioChange={handleRadioChange}
+        radioValue={radioValue} handleRadioChange={handleRadioChange} handleMandalaFileInput={handleMandalaFileInput} fileInputRef={fileInputRef}
       />
       </Col></Row>
       </div></Collapse>

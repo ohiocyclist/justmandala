@@ -6,7 +6,7 @@ import { autoFill } from './autoFill'
 import { randomDraw} from './draw'
 
 export function MandalaControls({slider1, handleSlider1Change, slider2, handleSlider2Change, slider3, handleSlider3Change, myLightDark, myPalette, setMyPalette, setCurrentColor,
-    toastId, resetCanvas, ctxRef, color, width, radioValue, handleRadioChange}) {
+    toastId, resetCanvas, ctxRef, color, width, radioValue, handleRadioChange, handleMandalaFileInput, fileInputRef}) {
     return <>
     <Row><Col className='text-center'>
     <Form>
@@ -69,5 +69,11 @@ export function MandalaControls({slider1, handleSlider1Change, slider2, handleSl
       Color One</ToggleButton>
     </ToggleButtonGroup>
     </Col></Row>
+    <Row><Col className='text-center'>
+    <Form.Label htmlFor="file-input"><h3>Reload a saved PNG Mandala:</h3></Form.Label>
+      <div style={{width: '80%'}}>
+        <Form.Control id="file-input" accept="image/png" onChange={handleMandalaFileInput} multiple={false} ref={fileInputRef}
+            type={'file'} style={{display: 'inline-block', marginLeft: '21%', marginRight: '25%' }} className="form-control" />
+      </div>   </Col></Row> 
     </>
 }
