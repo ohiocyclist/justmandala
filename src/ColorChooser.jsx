@@ -72,7 +72,9 @@ function ColorChooser({ myPalette, setMyPalette, myLightDark, handleFileInput, s
   }, [myPalette])
 
   const updateColor = (index, newColor) => {
-    setColorHelper(colors.current.map((color, i) => (i === index ? newColor : color)))
+    // need to update the useRef to avoid a race condition
+    colors.current = colors.current.map((color, i) => (i === index ? newColor : color))
+    setColorHelper(colors.current)
     if (setCurrentColor) {
       setCurrentColor(newColor)
     }
