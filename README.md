@@ -8,7 +8,11 @@ Also has a color chooser, a color importer from the image of your choosing, a ra
 Uses React and Bootstrap
 
 setup with node/npm,
-npm i
+
+npm i, 
+
+then
+
 npm run dev
 
 Put a toe in the water on unit testing with jest, npm test
