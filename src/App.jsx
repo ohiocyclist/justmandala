@@ -4,15 +4,15 @@ import { useQueryParam, StringParam, withDefault, NumberParam } from 'use-query-
 import { Container, Row, Col } from 'react-bootstrap'
 import "bootstrap/dist/css/bootstrap.min.css"
 import fill from './fill'
-import { draw } from './draw'
+import { draw, drawGrid } from './draw'
 import Collapse from 'react-bootstrap/Collapse'
 import { MandalaControls } from './MandalaControls'
 
 
 function JustMandala() {
   const chartRef = useRef(null)
-  const canvasRef = useRef(null)
   const ctxRef = useRef(null)
+  const topCtxRef = useRef(null)
   const slider1Default = withDefault(NumberParam, 17)
   const [slider1, setSlider1] = useQueryParam('Symmetry', slider1Default)
   const slider2Default = withDefault(NumberParam, 4)
@@ -29,6 +29,9 @@ function JustMandala() {
   const prevXY = useRef([])
   const [open, setOpen] = useState(false)
   const fileInputRef = useRef()  
+  const undoRef = useRef()
+  const canvasRef = useRef(null)
+  const lastUpdateRef = useRef(0)
 
   let color = currentColor
   // width is square for width and height so setting to height on a landscape
@@ -41,12 +44,38 @@ function JustMandala() {
     let canvas = document.createElement('canvas')
     canvas.width = width
     canvas.height = width
+    chartRef.current.style.position = 'relative'
     chartRef.current.appendChild(canvas)
     canvasRef.current = canvas
     ctx = canvas.getContext("2d")
     ctx.fillStyle = 'white'
     ctx.fillRect(0, 0, width, width)
     ctxRef.current = ctx
+    if (!undoRef.current) {
+      undoRef.current = canvas.toDataURL("image/png")
+    }
+    let topcanvas = document.createElement('canvas')
+    topcanvas.width = width
+    topcanvas.height = width
+    topcanvas.style.position = 'absolute'
+    topcanvas.style.top = '0'
+    topcanvas.style.left = '0'
+    topcanvas.style.zIndex = '10'
+    topcanvas.style.pointerEvents = 'none'
+
+    chartRef.current.appendChild(topcanvas)
+    let topCtx = topcanvas.getContext("2d")
+    topCtxRef.current = topCtx
+    drawGrid(topCtxRef, width, slider1)
+  }
+
+  const handleUndo = () => {
+    ctxRef.current.clearRect(0, 0, width, width)
+    const img = new Image()
+    img.src = undoRef.current
+    img.onload = () => {
+      ctxRef.current.drawImage(img, 0, 0, width, width)    
+    }      
   }
 
   const handleRadioChange = (event) => {
@@ -74,12 +103,25 @@ function JustMandala() {
     resetCanvas()
   }, [])
 
-  function overDraw(event) {
+  function overDraw(event, canvasRef, undoRef) {
+    if (event.buttons === 1) {
+      const now = Date.now()
+      if (lastUpdateRef.current === 0 || now - lastUpdateRef.current > 4000) {
+        undoRef.current = canvasRef.current.toDataURL("image/png")    
+        lastUpdateRef.current = now
+        console.log(event)
+        console.log('updating undo', now)
+      }
+    }
     if (event.ctrlKey) {
       fill(event, chartRef, ctxRef, color, width, slider1, radioValue)
     } else {
       draw(event, chartRef, ctxRef, width, slider1, slider2, color, prevXY.current)
     }
+  }
+
+  const handleOpen =() => {
+    setOpen(!open)
   }
 
   const handleMandalaFileInput = async (event) => {
@@ -106,9 +148,9 @@ function JustMandala() {
       <Row>
         <Col className='text-center'>
         <h1>Symmetry Based Mandalas</h1>
-        </Col></Row><Row><Col><p><font color="#FFF">Click and drag to draw, CTRL-click to fill, or</font></p></Col>
+        </Col></Row><Row><Col><p><font color="#FFF">Click and drag to draw, CTRL-click to fill, Gridlines in gray are not part of the output, or</font></p></Col>
       <Col className='text-end'>
-      <button onClick={() => setOpen(!open)}>{open ? "Hide" : "Show"} Controls</button>
+      <button onClick={handleOpen}>{(open ? 'Hide' : 'Show')} Controls</button>
       </Col></Row><Collapse in={open}>
         <div id="control-drawer">
       <Row><Col className='text-center'>
@@ -116,6 +158,7 @@ function JustMandala() {
         slider3={slider3} handleSlider3Change={handleSlider3Change} myLightDark={myLightDark} myPalette={myPalette} setMyPalette={setMyPalette}
         setCurrentColor={setCurrentColor} toastId={toastId} resetCanvas={resetCanvas} ctxRef={ctxRef} color={color} width={width}
         radioValue={radioValue} handleRadioChange={handleRadioChange} handleMandalaFileInput={handleMandalaFileInput} fileInputRef={fileInputRef}
+        handleUndo={handleUndo} canvasRef={canvasRef} undoRef={undoRef}
       />
       </Col></Row>
       </div></Collapse>
@@ -123,13 +166,12 @@ function JustMandala() {
       <div
           id="drawCanvas"
           ref={chartRef}
-          onMouseMove={overDraw}
+          onMouseMove={(e) => {overDraw(e, canvasRef, undoRef)}}
           onTouchStart={() => {draw(event, chartRef, ctxRef, width, slider1, slider2, color, prevXY.current)}}
-          onClick={overDraw}
+          onClick={(e) => {overDraw(e, canvasRef, undoRef)}}
           className="mx-auto"
-          style={{width: `${width}px`, height: `${width}px`, backgroundColor: 'white', marginTop: '20px', display: 'block'}}
-      >
-      </div>
+          style={{width: `${width}px`, height: `${width}px`, backgroundColor: 'white', marginTop: '20px', display: 'block' }}
+      ></div>
     </Col>
     </Row>
     </Container>

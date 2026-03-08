@@ -11,7 +11,7 @@ export class getMandalaHelpers {
     return [ev.clientX - rect.left + 0.5, ev.clientY - rect.top + 0.5]
   }
 
-  static getSymmetryPoints = (x, y, width, slider1, extraMirror=true) => {
+  static getSymmetryPoints = (x, y, width, slider1, extraMirror=true, gridPull=false) => {
     // The coordinate system has its origin at the center of the canvas,
     // has up as 0 degrees, right as 90 deg, down as 180 deg, and left as 270 deg.
     var ctrX = width / 2
@@ -21,6 +21,7 @@ export class getMandalaHelpers {
     var dist = Math.hypot(relX, relY)
     var angle = Math.atan2(relX, relY) // Radians
     var result = []
+    var gridLines = []
     for (var i = 0; i < slider1; i++) {
       var theta = angle + ((Math.PI * 2) / slider1) * i // Radians
       x = ctrX + Math.sin(theta) * dist
@@ -31,8 +32,14 @@ export class getMandalaHelpers {
         x = ctrX - Math.sin(theta) * dist
         result.push([x, y])
       }
+      let gridX = ctrX + Math.sin(((Math.PI * 2) / slider1) * i) * 0.9 * ctrX
+      let gridY = ctrY - Math.cos(((Math.PI * 2) / slider1) * i) * 0.9 * ctrY
+      gridLines.push([gridX, gridY])
     }
 
+    if (gridPull) {
+      return gridLines
+    }
     return result
   }
 

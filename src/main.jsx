@@ -11,6 +11,7 @@ createRoot(document.getElementById('root')).render(
     <QueryParamProvider adapter={ReactRouter6Adapter}>
       <Routes>
         <Route path="/" element={<App />} />
+        <Route path="/justmandala" element={<App />} />
       </Routes>
     </QueryParamProvider>
   </BrowserRouter>

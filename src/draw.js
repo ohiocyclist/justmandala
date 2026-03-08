@@ -5,6 +5,17 @@ const linspace = (start, end, num) => {
     return Array.from({ length: num }, (_, i) => start + i * step)
 }
 
+export function drawGrid(ctxRef, width, slider1) {
+  let getGrid = true
+  let nosym = true
+  let lineWidth = 1
+  let gridLines = getMandalaHelpers.getSymmetryPoints(0, 0, width, slider1, true, getGrid)
+  for (let i = 0; i < gridLines.length; i++) {
+    // (gridLines[i][0] - width / 2) / 100 leaves a small open area at the center for better visibility
+    drawLine(width / 2 + (gridLines[i][0] - width / 2) / 100, width / 2 + (gridLines[i][1] - width / 2) / 100, gridLines[i][0], gridLines[i][1], ctxRef, width, slider1, lineWidth, 'gray', nosym)
+  }
+}
+
 export function drawLine(x1, y1, x2, y2, ctxRef, width, slider1, slider2, color, nosym=false, extraMirror=true) {
     let startPoints = getMandalaHelpers.getSymmetryPoints(x1, y1, width, slider1, extraMirror)
     let endPoints = getMandalaHelpers.getSymmetryPoints(x2, y2, width, slider1, extraMirror)
@@ -31,6 +42,7 @@ export function drawLine(x1, y1, x2, y2, ctxRef, width, slider1, slider2, color,
   }
 
 export function draw(e, chartRef, ctxRef, width, slider1, slider2, color, prevXY) {
+  console.log("draw")
     var coord = getMandalaHelpers.getLocalCoordinates(e, chartRef);
     // console.log(" getLocalCoordinates[0] " + coord[0]);
 
@@ -61,7 +73,9 @@ function drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, 
   drawLine(xCenter - curx, xCenter - cury, xCenter - endx, xCenter - endy, ctxRef, width, slider1, slider2, color, nosym, extraMirror)
 }
 
-export function randomDraw(width, slider1, slider2, ctxRef, color) {
+export function randomDraw(width, slider1, slider2, ctxRef, color, canvasRef, undoRef) {
+    // make undo possible
+    undoRef.current = canvasRef.current.toDataURL("image/png")
     let ctx = ctxRef.current
     let xCenter = width / 2
     let holdColor = color
@@ -70,7 +84,7 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
     if (ctx) {
       // four styles of random mandala
       let randNum = Math.random()
-      if (randNum < 0.3) {
+      if (randNum < 0.2) {
         ctx.strokeStyle = color
         let endx = 0
         let endy = 0
@@ -179,7 +193,7 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
             }
           }
         }
-      } else if (randNum < 0.5) {
+      } else if (randNum < 0.3) {
         // spiral style
         ctx.strokeStyle = color
         let endx = xCenter
@@ -225,7 +239,21 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
           endx = startx
           endy = starty
         }
-      } else if (Math.random() < 0.2) {
+      } else if (randNum < 0.4) {
+        // straight pattern
+        ctx.strokeStyle = color
+        let maxi = 10
+        for (let i = 0; i < maxi; i++) {
+          // overlap with the line above
+          let splayfactor = 2
+          if (i === maxi - 1) splayfactor = 1
+          let stepfraction = 15
+          let startx = xCenter - (i + splayfactor) * (xCenter / stepfraction)
+          let endx = xCenter + (i + splayfactor) * (xCenter / stepfraction)
+          let yloc = xCenter - (i + 1) * (xCenter / stepfraction)
+          drawLine(startx, yloc, endx, yloc, ctxRef, width, slider1, slider2, color)
+        }
+      } else if (randNum < 0.6) {
         // just a bunch of straight lines style
         ctx.strokeStyle = color
         let offset = 40 * Math.random()
@@ -244,7 +272,7 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
           }
           drawLine(startx, starty, startx + offset, Math.abs(width - starty), ctxRef, width, slider1, slider2, color)
         }
-      } else if (Math.random() < 0.5) {
+      } else if (randNum < 0.8) {
         // interlocking crossing lines style
         let workfactor = 12
         let ifactor = 2

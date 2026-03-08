@@ -76,7 +76,9 @@ export class autoFill {
     }  
   }
 
-  static autoFill = (ctxRef, width, myPalette, slider1, slider3, radioValue) => {
+  static autoFill = (ctxRef, width, myPalette, slider1, slider3, radioValue, canvasRef, undoRef) => {
+    // make undo possible
+    undoRef.current = canvasRef.current.toDataURL("image/png")
     // first, traverse the entire image and find all the fillable areas
     const fillableAreas = []
     const ctx = ctxRef.current
