@@ -92,8 +92,18 @@ describe('randomDraw', () => {
 
     getMandalaHelpers.getSymmetryPoints.mockReturnValue([[10, 10]]);
 
+    const canvasRef = {
+      current: {
+        toDataURL: jest.fn()
+      }
+    }
+
+    const undoRef = {
+      current: {}
+    }
+
     expect(() =>
-      randomDraw(200, 4, 2, ctxRef, 'purple')
+      randomDraw(200, 4, 2, ctxRef, 'purple', canvasRef, undoRef)
     ).not.toThrow();
 
     expect(ctx.beginPath).toHaveBeenCalled();

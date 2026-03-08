@@ -104,6 +104,7 @@ describe("autoFill", () => {
   test("calls canvas putImageData with modified image", () => {
     const width = 10;
     const slider1 = 5;
+    const slider3 = 25;
     const radioValue = 1;
     const palette = encodeURIComponent('["#ff0000"]');
 
@@ -123,7 +124,17 @@ describe("autoFill", () => {
     getMandalaHelpers.getAdjacentWhite.mockReturnValue([[5, 5]]);
     getMandalaHelpers.hexToRgb.mockReturnValue({ r: 255, g: 0, b: 0 });
 
-    autoFill.autoFill(ctxRef, width, palette, slider1, radioValue);
+    const canvasRef = {
+      current: {
+        toDataURL: jest.fn()
+      }
+    }
+
+    const undoRef = {
+      current: {}
+    }
+
+    autoFill.autoFill(ctxRef, width, palette, slider1, slider3, radioValue, canvasRef, undoRef);
 
     expect(ctx.putImageData).toHaveBeenCalledTimes(1);
     const finalImg = ctx.putImageData.mock.calls[0][0].data;
