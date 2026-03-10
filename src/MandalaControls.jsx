@@ -6,7 +6,20 @@ import { autoFill } from './autoFill'
 import { randomDraw} from './draw'
 
 export function MandalaControls({slider1, handleSlider1Change, slider2, handleSlider2Change, slider3, handleSlider3Change, myLightDark, myPalette, setMyPalette, setCurrentColor,
-    toastId, resetCanvas, ctxRef, color, width, radioValue, handleRadioChange, handleMandalaFileInput, fileInputRef, handleUndo, canvasRef, undoRef}) {
+    toastId, resetCanvas, ctxRef, color, width, radioValue, handleRadioChange, handleMandalaFileInput, fileInputRef, handleUndo, canvasRef, undoRef, handleDrawFillChange}) {
+    
+    const randomDrawUndoWrapper = (width, slider1, slider2, ctxRef, color, canvasRef, undoRef) => {
+      // make undo possible
+      undoRef.current = canvasRef.current.toDataURL("image/png")      
+      randomDraw(width, slider1, slider2, ctxRef, color)
+    }
+
+    const autoFillUndoWrapper = (ctxRef, width, myPalette, slider1, slider3, radioValue, canvasRef, undoRef) => {
+      // make undo possible
+      undoRef.current = canvasRef.current.toDataURL("image/png")      
+      autoFill.autoFill(ctxRef, width, myPalette, slider1, slider3, radioValue)
+    }
+
     return <>
     <Row><Col className='text-center'>
     <Form>
@@ -36,7 +49,7 @@ export function MandalaControls({slider1, handleSlider1Change, slider2, handleSl
       />      
     </Form>
       </Col></Row><Row><Col className='text-center'>
-    <h2>Click and drag to draw, Control-Click to fill</h2>
+    <h2>Click and drag to draw, switch button to fill</h2>
     <ColorChooser myLightDark={myLightDark} myPalette={myPalette} setMyPalette={setMyPalette} setCurrentColor={setCurrentColor} skipPalButton={true}
       handleFileInput={(event) => {return MandalaLib.handleFileInput(event, toastId, myPalette, setMyPalette, myLightDark)}} />
     </Col></Row><Row><Col className='text-center'>
@@ -44,10 +57,10 @@ export function MandalaControls({slider1, handleSlider1Change, slider2, handleSl
         <Button onClick={resetCanvas}>Reset Canvas</Button> 
       </div>
       <div style={{display: 'inline-block', marginLeft: '20px'}}>
-        <Button onClick={() => {randomDraw(width, slider1, slider2, ctxRef, color, canvasRef, undoRef)}}>Random Mandala</Button>
+        <Button onClick={() => {randomDrawUndoWrapper(width, slider1, slider2, ctxRef, color, canvasRef, undoRef)}}>Random Mandala</Button>
       </div>
       <div style={{display: 'inline-block', marginLeft: '20px'}}>
-        <Button onClick={() => {autoFill.autoFill(ctxRef, width, myPalette, slider1, slider3, radioValue, canvasRef, undoRef)}}>Automatically Fill Areas</Button>
+        <Button onClick={() => {autoFillUndoWrapper(ctxRef, width, myPalette, slider1, slider3, radioValue, canvasRef, undoRef)}}>Automatically Fill Areas</Button>
       </div>
       <div style={{display: 'inline-block', marginLeft: '20px'}}>
         <Button onClick={() => {handleUndo()}}>Undo</Button>
@@ -70,6 +83,22 @@ export function MandalaControls({slider1, handleSlider1Change, slider2, handleSl
         value="fillOne"
         variant="outline-primary">
       Color One</ToggleButton>
+    </ToggleButtonGroup>
+    </Col></Row>
+    <Row><Col className='test-center' style={{marginTop: '20px'}}>
+    <ToggleButtonGroup type="radio" name="drawFill" defaultValue="draw" onChange={handleDrawFillChange}>
+      <ToggleButton
+        id="draw"
+        value="draw"
+        variant="outline-primary">
+          Draw Mode
+        </ToggleButton>
+      <ToggleButton
+        id="fill"
+        value="fill"
+        variant="outline-primary">
+          Fill Mode
+        </ToggleButton>        
     </ToggleButtonGroup>
     </Col></Row>
     <Row><Col className='text-center'>

@@ -1,11 +1,13 @@
 export class getMandalaHelpers {
 
   static getLocalCoordinates = (ev, chartRef) => {
-    if (ev.type == "touchstart") {
+    if (ev.type.includes("touch")) {
       var touch = ev.touches[0] || ev.changedTouches[0]
-      var realTarget = document.elementFromPoint(touch.clientX, touch.clientY)
+      var realTarget = document.elementFromPoint(touch.clientX, touch.clientY)      
       ev.offsetX = touch.clientX - realTarget.getBoundingClientRect().x
       ev.offsetY = touch.clientY - realTarget.getBoundingClientRect().y
+      const rect = chartRef.current.getBoundingClientRect()
+      return [touch.clientX - rect.left + 0.5, touch.clientY - rect.top + 0.5]
     }
     const rect = chartRef.current.getBoundingClientRect()
     return [ev.clientX - rect.left + 0.5, ev.clientY - rect.top + 0.5]

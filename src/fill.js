@@ -2,7 +2,7 @@ import { getMandalaHelpers } from './getlocalcoordinates.js'
 
 export default function fill(e, chartRef, ctxRef, color, width, slider1, radioValue) {
     var coord = getMandalaHelpers.getLocalCoordinates(e, chartRef)
-    if (e.buttons == 1) {
+    if (e.buttons == 1 || e.type.includes("touch")) {
       var x = Math.floor(coord[0])
       var y = Math.floor(coord[1])
       let symmetricPoints = getMandalaHelpers.getSymmetryPoints(x, y, width, slider1)

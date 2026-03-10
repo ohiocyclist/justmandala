@@ -17,6 +17,7 @@ export function drawGrid(ctxRef, width, slider1) {
 }
 
 export function drawLine(x1, y1, x2, y2, ctxRef, width, slider1, slider2, color, nosym=false, extraMirror=true) {
+
     let startPoints = getMandalaHelpers.getSymmetryPoints(x1, y1, width, slider1, extraMirror)
     let endPoints = getMandalaHelpers.getSymmetryPoints(x2, y2, width, slider1, extraMirror)
 
@@ -42,7 +43,6 @@ export function drawLine(x1, y1, x2, y2, ctxRef, width, slider1, slider2, color,
   }
 
 export function draw(e, chartRef, ctxRef, width, slider1, slider2, color, prevXY) {
-  console.log("draw")
     var coord = getMandalaHelpers.getLocalCoordinates(e, chartRef);
     // console.log(" getLocalCoordinates[0] " + coord[0]);
 
@@ -57,9 +57,11 @@ export function draw(e, chartRef, ctxRef, width, slider1, slider2, color, prevXY
 
     if (e.buttons == 1) {
       drawLine(prevXY[0], prevXY[1], x, y, ctxRef, width, slider1, slider2, color)
-    } else if (e.type == "click") {
+    } else if (e.type == "click" || e.type == "touchstart") {
       prevXY[0] = x
       prevXY[1] = y
+      drawLine(prevXY[0], prevXY[1], x, y, ctxRef, width, slider1, slider2, color)
+    } else if (e.type == "touchmove" || e.type.includes("touch")) {
       drawLine(prevXY[0], prevXY[1], x, y, ctxRef, width, slider1, slider2, color)
     }
     prevXY[0] = x
@@ -73,9 +75,7 @@ function drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, 
   drawLine(xCenter - curx, xCenter - cury, xCenter - endx, xCenter - endy, ctxRef, width, slider1, slider2, color, nosym, extraMirror)
 }
 
-export function randomDraw(width, slider1, slider2, ctxRef, color, canvasRef, undoRef) {
-    // make undo possible
-    undoRef.current = canvasRef.current.toDataURL("image/png")
+export function randomDraw(width, slider1, slider2, ctxRef, color) {
     let ctx = ctxRef.current
     let xCenter = width / 2
     let holdColor = color
