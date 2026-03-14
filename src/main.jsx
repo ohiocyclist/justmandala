@@ -6,6 +6,8 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 
+// allow both standalone page and at a target location
+// we need routes because UseQueryParam needs routes
 createRoot(document.getElementById('root')).render(
   <BrowserRouter>
     <QueryParamProvider adapter={ReactRouter6Adapter}>

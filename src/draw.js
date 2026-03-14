@@ -1,10 +1,12 @@
 import { getMandalaHelpers } from './getlocalcoordinates'
 
+// as inspired by numpy and code ported from Python
 const linspace = (start, end, num) => {
     const step = (end - start) / (num)
     return Array.from({ length: num }, (_, i) => start + i * step)
 }
 
+// draw the thin gray lines that make the grid
 export function drawGrid(ctxRef, width, slider1) {
   let getGrid = true
   let nosym = true
@@ -17,6 +19,8 @@ export function drawGrid(ctxRef, width, slider1) {
 }
 
 export function drawLine(x1, y1, x2, y2, ctxRef, width, slider1, slider2, color, nosym=false, extraMirror=true) {
+
+    // draw a line from x1, y1 to x2, y2 and all symmetrical points radial and mirror (unless nosym is true) (and extraMirror false turns of the mirror symmetry)
 
     let startPoints = getMandalaHelpers.getSymmetryPoints(x1, y1, width, slider1, extraMirror)
     let endPoints = getMandalaHelpers.getSymmetryPoints(x2, y2, width, slider1, extraMirror)
@@ -43,33 +47,37 @@ export function drawLine(x1, y1, x2, y2, ctxRef, width, slider1, slider2, color,
   }
 
 export function draw(e, chartRef, ctxRef, width, slider1, slider2, color, prevXY) {
+    // turn user inputs into lines on the page
     var coord = getMandalaHelpers.getLocalCoordinates(e, chartRef);
     // console.log(" getLocalCoordinates[0] " + coord[0]);
 
-    var x = coord[0];
-    var y = coord[1];
-
-    // (2 * Math.PI) / 16
+    var x = coord[0]
+    var y = coord[1]
 
     let ctx = ctxRef.current
     ctx.strokeStyle = color
     ctx.lineWidth = Number(slider2)
 
     if (e.buttons == 1) {
+      // continue a mouse move
       drawLine(prevXY[0], prevXY[1], x, y, ctxRef, width, slider1, slider2, color)
     } else if (e.type == "click" || e.type == "touchstart") {
+      // this is the start of a line series so we reset previous here
       prevXY[0] = x
       prevXY[1] = y
       drawLine(prevXY[0], prevXY[1], x, y, ctxRef, width, slider1, slider2, color)
     } else if (e.type == "touchmove" || e.type.includes("touch")) {
+      // continue a touch move
       drawLine(prevXY[0], prevXY[1], x, y, ctxRef, width, slider1, slider2, color)
     }
+    // connect the next segment to the current one
     prevXY[0] = x
     prevXY[1] = y
   }
 
 function drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter) {
-  // do all the shifting to the center here
+  // do all the shifting to the center here for the kite style random mandala
+  // kite style random mandala does not use extraMirror but uses radial symmetry
   let extraMirror = false
   let nosym = false
   drawLine(xCenter - curx, xCenter - cury, xCenter - endx, xCenter - endy, ctxRef, width, slider1, slider2, color, nosym, extraMirror)
@@ -82,15 +90,19 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
     // the user can draw the outline in any color they like but autodraw is black
     color = 'black'
     if (ctx) {
-      // four styles of random mandala
+      // six styles of random mandala
       let randNum = Math.random()
       if (randNum < 0.2) {
+        // kite style, first worked out in Jupyter Notebook.  Original did not have access to the symmetry function so it has its own unused symmetry built in.
         ctx.strokeStyle = color
         let endx = 0
         let endy = 0
+        // magic numbers to taste
         let scalefactor = 1.35
-        let allshrink = 0.6        
+        let allshrink = 0.6      
+        // want at least four layers and up to ten  
         let levels = Math.floor(Math.random() * 7) + 4
+        // turn on secondary inner drawing half the time
         let inners = Math.random() > 0.5
         const mystride = 24
         const starPoints = linspace(0, 2 * Math.PI, slider1 * mystride)
@@ -98,6 +110,7 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
         const starScaleUp = Math.floor(xCenter * 6 / (Math.pow(levels, 2)))
         const star_x = starPoints.map(x => starScaleUp * Math.cos(x))
         const star_y = starPoints.map(x => starScaleUp * Math.sin(x))
+        // we draw a bunch of points around a circle and then we select some to connect to
         let ap = star_x.map((x, i) => ({x: x, y: star_y[i]}))
         let myxy = ap.filter((_, i) => i % mystride === 0)       
         let mymxy = ap.filter((_, i) => i % mystride === mystride / 2).map((_, i, arr) => arr[(i - 1 + arr.length) % arr.length])       
@@ -112,17 +125,21 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
         let myrad = 1
         let tapLevel = 0
         for (let level = 0; level < levels; level++) {
+          // more control parameters to taste
           let scaleup = level === 0 ? 0 : level === levels - 1 ? 1.05 : scalefactor
           scaleup = scaleup * (level === 0 ? allshrink : 1) * (level === 1 ? 1/allshrink : 1)
           let larr = Math.pow(scalefactor, level)
           larr = larr * (level < 2 ? allshrink : 1)
           let prevlar = level > 0 ? Math.pow(scalefactor, level - 1) : scalefactor
           prevlar = prevlar * (level < 3 ? allshrink : 1)
+          // the last level is flattened compared to the rest
           let discount = level === levels - 1 ? 0.9 : 0.8
           let tdiscount = level === levels - 1 ? 0.965 : 0.9
           let xdiscount = level === levels - 1 ? 0.9 : 1
           let zarr = larr * xdiscount        
+          // which points on the circle to connect to alternates even/odd
           if (level % 2 == 0) {
+            // these are the Python control functions to translate into Javascript
             // fxy(rowx, rowy, level, (x) => ( [x[0] * larr, x[1] * myrad * prevlar, x[2] * larr, x[1] * larr * scaleup]), mypxy, mymxy, myxy)
             curx = mypxy[tapLevel].x * larr
             cury = mypxy[tapLevel].y * larr
@@ -207,6 +224,7 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
           let step = (i + 1) * 30 + (i + 1) * 10 * Math.random()
           let startx = 0
           let starty = 0
+          // keep turning 90 degrees
           if (angle === 0) {
             startx = endx + step
             starty = endy - step
@@ -246,6 +264,7 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
         for (let i = 0; i < maxi; i++) {
           // overlap with the line above
           let splayfactor = 2
+          // the last one doesn't have a line above to overlap with
           if (i === maxi - 1) splayfactor = 1
           let stepfraction = 15
           let startx = xCenter - (i + splayfactor) * (xCenter / stepfraction)
@@ -315,6 +334,7 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
         for(yLocn; yLocn < xCenter - 5; yLocn += yStep * 2 * Math.random() - yStep / 6) {
           let wideFactor = (xCenter - yLocn) * 2 * Math.PI / Number(slider1) * 1.5
           xLocn = xLocn - wideFactor * stepSize / 2 + wideFactor * stepSize * Math.random()
+          // make a bunch of consective random small steps and then a step that can be randomly big
           if (stepSize === 1) {
             stepSize = 0.03
           } else if (stepSize === 0.03) {

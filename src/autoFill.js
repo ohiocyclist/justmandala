@@ -11,6 +11,7 @@ export class autoFill {
     for (let prex = 0; prex < wideFactor; prex++) {
       for (let prey = 0; prey < width / 2; prey++) {
         // work outward from the center (for order of color purposes)
+        // we skip some pixels for speed; that can miss areas sometimes if they're very small
         let x = 0
         if (prex % 2 === 0) {
           x = Math.abs(500 - prex)
@@ -24,28 +25,35 @@ export class autoFill {
           y = 500 + prey
         }
         // do this in symmetric points order
-        let symmetricPoints = getMandalaHelpers.getSymmetryPoints(x, y, width, slider1)
-        for (let [xx, yy] of symmetricPoints) {
-          xx = Math.floor(xx)
-          yy = Math.floor(yy)
-          const i = (yy * width + xx) * 4
-          if (getMandalaHelpers.isWhite({r: bgdata[i], g: bgdata[i + 1], b: bgdata[i + 2], a: 255})) {
-            let allcoords = getMandalaHelpers.getAdjacentWhite(bgdata, xx, yy, width, width, radioValue)
-            if (allcoords.length > 0) {
-              let exclusion = false
-              for (const [x, y] of allcoords) {
-                // don't use the edge areas
-                if ((x === 0 && (y === 0 || y === width - 1)) || (x === width - 1 && (y === 0 || y === width - 1))) {
-                  exclusion = true
+        // don't revisit seen points
+        const j = (y * width + x) * 4
+        if (bgdata[j] != 0) {
+          let symmetricPoints = getMandalaHelpers.getSymmetryPoints(x, y, width, slider1)
+          for (let [xx, yy] of symmetricPoints) {
+            xx = Math.floor(xx)
+            yy = Math.floor(yy)
+            const i = (yy * width + xx) * 4
+            // only fill white pixel areas
+            if (getMandalaHelpers.isWhite({r: bgdata[i], g: bgdata[i + 1], b: bgdata[i + 2], a: 255})) {
+              let allcoords = getMandalaHelpers.getAdjacentWhite(bgdata, xx, yy, width, width, radioValue)
+              if (allcoords.length > 0) {
+                let exclusion = false
+                for (const [x, y] of allcoords) {
+                  // don't use the edge areas
+                  if ((x === 0 && (y === 0 || y === width - 1)) || (x === width - 1 && (y === 0 || y === width - 1))) {
+                    exclusion = true
+                  }
+                  // bgdata is just to claim space, so it also claims exclusion areas we won't fill later
+                  const j = (y * width + x) * 4
+                  bgdata[j]     = 0
+                  bgdata[j + 1] = 0
+                  bgdata[j + 2] = 0
+                  bgdata[j + 3] = 255
                 }
-                const j = (y * width + x) * 4
-                bgdata[j]     = 0
-                bgdata[j + 1] = 0
-                bgdata[j + 2] = 0
-                bgdata[j + 3] = 255
-              }
-              if (!exclusion) {
-                fillableAreas.push(allcoords)
+                if (!exclusion) {
+                  // this does the actual filling (pass by reference)
+                  fillableAreas.push(allcoords)
+                }
               }
             }
           }

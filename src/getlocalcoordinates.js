@@ -2,6 +2,7 @@ export class getMandalaHelpers {
 
   static getLocalCoordinates = (ev, chartRef) => {
     if (ev.type.includes("touch")) {
+      // this was the last step in getting mobile working.  Without referring to touch, the coordinates are off the page.
       var touch = ev.touches[0] || ev.changedTouches[0]
       var realTarget = document.elementFromPoint(touch.clientX, touch.clientY)      
       ev.offsetX = touch.clientX - realTarget.getBoundingClientRect().x
@@ -9,6 +10,7 @@ export class getMandalaHelpers {
       const rect = chartRef.current.getBoundingClientRect()
       return [touch.clientX - rect.left + 0.5, touch.clientY - rect.top + 0.5]
     }
+    // mouse/desktop is comparatively simpler.
     const rect = chartRef.current.getBoundingClientRect()
     return [ev.clientX - rect.left + 0.5, ev.clientY - rect.top + 0.5]
   }
@@ -25,6 +27,7 @@ export class getMandalaHelpers {
     var result = []
     var gridLines = []
     for (var i = 0; i < slider1; i++) {
+      // step through all the angles in radial symmetry
       var theta = angle + ((Math.PI * 2) / slider1) * i // Radians
       x = ctrX + Math.sin(theta) * dist
       y = ctrY - Math.cos(theta) * dist
@@ -34,6 +37,7 @@ export class getMandalaHelpers {
         x = ctrX - Math.sin(theta) * dist
         result.push([x, y])
       }
+      // create all the gridlines
       let gridX = ctrX + Math.sin(((Math.PI * 2) / slider1) * i) * 0.9 * ctrX
       let gridY = ctrY - Math.cos(((Math.PI * 2) / slider1) * i) * 0.9 * ctrY
       gridLines.push([gridX, gridY])
@@ -46,6 +50,7 @@ export class getMandalaHelpers {
   }
 
   static hexToRgb = (hex) => {
+      // turn a #ff00B0 into a tuple
       hex = hex.replace(/^#/, "");
 
       // expand shorthand #fff → #ffffff
@@ -63,10 +68,16 @@ export class getMandalaHelpers {
   }
 
   static isWhite = ({ r, g, b, a }) => {
+    // put some fudge factor in for off-white
+    // lines as drawn have off-white pixels surrounding them for dithering that we just want to fill
+    // this can also catch some bright colors however
+    // used to only overfill white
     return r > 215 && g > 215 && b > 215
   }
 
   static getAdjacentWhite = (data, startX, startY, width, height, radioValue) => {
+      // figure out what area we can fill
+      // a little slow, in the cumulative
       const stack = [[startX, startY]]
       const visited = new Set()
       const result = []
@@ -74,6 +85,7 @@ export class getMandalaHelpers {
       const key = (x, y) => `${x},${y}`
 
       const i = (startY * width + startX) * 4
+      // fillone must match this color
       const startingcolor = {r: data[i], g: data[i + 1], b: data[i + 2], a: 255}
 
       while (stack.length > 0) {
