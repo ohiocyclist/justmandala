@@ -14,15 +14,15 @@ export class autoFill {
         // we skip some pixels for speed; that can miss areas sometimes if they're very small
         let x = 0
         if (prex % 2 === 0) {
-          x = Math.abs(500 - prex)
+          x = Math.abs(width / 2 - prex)
         } else {
-          x = 500 + prex
+          x = width / 2 + prex
         }
         let y = 0 
         if (prey % 2 === 0) {
-          y = Math.abs(500 - prey)
+          y = Math.abs(width / 2 - prey)
         } else {
-          y = 500 + prey
+          y = width / 2 + prey
         }
         // do this in symmetric points order
         // don't revisit seen points
