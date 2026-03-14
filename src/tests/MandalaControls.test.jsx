@@ -39,8 +39,8 @@ describe('MandalaControls', () => {
     width: 400,
     radioValue: 'fillAll',
     handleRadioChange: jest.fn(),
-    undoRef: 'undoRef',
-    canvasRef: 'canvasRef'
+    undoRef: {current: {}},
+    canvasRef: {current: {toDataURL: jest.fn()}}
   };
 
   it('renders all sliders and labels', () => {
@@ -85,9 +85,7 @@ describe('MandalaControls', () => {
       defaultProps.slider1,
       defaultProps.slider2,
       defaultProps.ctxRef,
-      defaultProps.color,
-      defaultProps.canvasRef,
-      defaultProps.undoRef
+      defaultProps.color
     );
   });
 
@@ -103,9 +101,7 @@ describe('MandalaControls', () => {
       defaultProps.myPalette,
       defaultProps.slider1,
       defaultProps.slider3,
-      defaultProps.radioValue,
-      defaultProps.canvasRef,
-      defaultProps.undoRef
+      defaultProps.radioValue
     );
   });
 

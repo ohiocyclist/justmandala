@@ -134,7 +134,7 @@ describe("autoFill", () => {
       current: {}
     }
 
-    autoFill.autoFill(ctxRef, width, palette, slider1, slider3, radioValue, canvasRef, undoRef);
+    autoFill.autoFill(ctxRef, width, palette, slider1, slider3, radioValue);
 
     expect(ctx.putImageData).toHaveBeenCalledTimes(1);
     const finalImg = ctx.putImageData.mock.calls[0][0].data;
