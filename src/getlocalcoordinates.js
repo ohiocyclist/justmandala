@@ -77,47 +77,51 @@ export class getMandalaHelpers {
 
   static getAdjacentWhite = (data, startX, startY, width, height, radioValue) => {
       // figure out what area we can fill
-      // a little slow, in the cumulative
-      const stack = [[startX, startY]]
-      const visited = new Set()
+      // faster now, thanks to Copilot
+      const stack = new Int32Array(width * height * 2)
+      let sp = 0
+
+      stack[sp++] = startX
+      stack[sp++] = startY
+
+      const visited = new Uint8Array(width * height)
       const result = []
 
-      const key = (x, y) => `${x},${y}`
+      let i = (startY * width + startX) * 4
+      let curColorR = data[i]
+      let curColorG = data[i + 1]
+      let curColorB = data[i + 2]
 
-      const i = (startY * width + startX) * 4
-      // fillone must match this color
-      const startingcolor = {r: data[i], g: data[i + 1], b: data[i + 2], a: 255}
+      while (sp > 0) {
+        const y = stack[--sp]
+        const x = stack[--sp]
 
-      while (stack.length > 0) {
-          const [x, y] = stack.pop()
-          const k = key(x, y)
+        if (x < 0 || y < 0 || x >= width || y >= height) continue
 
-          if (visited.has(k)) continue
-          visited.add(k)
+        const idx = y * width + x
+        if (visited[idx]) continue
+        visited[idx] = 1
 
-          // bounds check
-          if (x < 0 || y < 0 || x >= width || y >= height) continue
+        const i = idx * 4
+        const r = data[i], g = data[i + 1], b = data[i + 2]
 
-          // color check
-          const i = (y * width + x) * 4
-          // allow one fill to over fill colors
-          if (radioValue === 'fillOne') {
-            //console.log(data[i], startingcolor.r, data[i + 1], startingcolor.g, data[i + 2], startingcolor.b)
-            if (data[i] != startingcolor.r || data[i + 1] != startingcolor.g || data[i + 2] != startingcolor.b) continue
-          } else {
-            if (!this.isWhite({r: data[i], g: data[i + 1], b: data[i + 2], a: 255})) continue
-          }
+        // Inline your white check for speed
+        if (radioValue === "fillOne") {
+          if (!(r === curColorR && g === curColorG && b === curColorB)) continue
+        } else {
+          if (!(r > 215 && g > 215 && b > 215)) continue
+        }
 
-          result.push([x, y])
+        result.push([x, y])
 
-          // add neighbors
-          stack.push([x + 1, y])
-          stack.push([x - 1, y])
-          stack.push([x, y + 1])
-          stack.push([x, y - 1])
+        stack[sp++] = x + 1; stack[sp++] = y
+        stack[sp++] = x - 1; stack[sp++] = y
+        stack[sp++] = x;     stack[sp++] = y + 1
+        stack[sp++] = x;     stack[sp++] = y - 1
       }
 
-      return result
+      return result;
+
   }
   
 }

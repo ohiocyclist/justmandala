@@ -6,7 +6,7 @@ import { autoFill } from './autoFill'
 import { randomDraw} from './draw'
 
 export function MandalaControls({slider1, handleSlider1Change, slider2, handleSlider2Change, slider3, handleSlider3Change, myLightDark, myPalette, setMyPalette, setCurrentColor,
-    toastId, resetCanvas, ctxRef, color, width, radioValue, handleRadioChange, handleMandalaFileInput, fileInputRef, handleUndo, canvasRef, undoRef, handleDrawFillChange}) {
+    toastId, resetCanvas, ctxRef, color, width, radioValue, handleRadioChange, handleMandalaFileInput, fileInputRef, handleUndo, canvasRef, undoRef, handleDrawFillChange, fillOption}) {
     
     const randomDrawUndoWrapper = (width, slider1, slider2, ctxRef, color, canvasRef, undoRef) => {
       // make undo possible
@@ -67,7 +67,8 @@ export function MandalaControls({slider1, handleSlider1Change, slider2, handleSl
       </div>
     </Col></Row><Row><Col className='text-center'>
     <h2>Choose fill behavior:</h2>
-    <ToggleButtonGroup type="radio" name="radioGroup" defaultValue="fillAll" onChange={handleRadioChange}>
+    {/* if you add more options here also fix up the clamp in the QueryParams */}
+    <ToggleButtonGroup type="radio" name="radioGroup" defaultValue={fillOption} onChange={handleRadioChange}>
       <ToggleButton
         id="allselect"
         value="fillAll"

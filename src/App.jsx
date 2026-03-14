@@ -16,11 +16,35 @@ function JustMandala() {
   const ctxRef = useRef(null)
   const topCtxRef = useRef(null)
   // QueryParam set sliders.  Slider 1 is number of points.  Slider 2 is brushsize.  Slider 3 is color repeat
-  const slider1Default = withDefault(NumberParam, 17)
+  const ClampedNumberParam = {
+    encode: (value) => String(value),
+    decode: (value) => {
+      const n = Number(value);
+      if (isNaN(n)) return 17;
+      return Math.min(50, Math.max(2, n));
+    }
+  }
+  const slider1Default = withDefault(ClampedNumberParam, 17)
   const [symmetrySlider, setSymmetrySlider] = useQueryParam('Symmetry', slider1Default)
-  const slider2Default = withDefault(NumberParam, 4)
+  const BrushClampedNumberParam = {
+    encode: (value) => String(value),
+    decode: (value) => {
+      const n = Number(value);
+      if (isNaN(n)) return 4;
+      return Math.min(24, Math.max(2, n));
+    }
+  }
+  const slider2Default = withDefault(BrushClampedNumberParam, 4)
   const [brushSizeSlider, setBrushSizeSlider] = useQueryParam('Brushsize', slider2Default)
-  const slider3Default = withDefault(NumberParam, 16)
+  const FillNumberParam = {
+    encode: (value) => String(value),
+    decode: (value) => {
+      const n = Number(value);
+      if (isNaN(n)) return 16;
+      return Math.min(25, Math.max(2, n));
+    }
+  }
+  const slider3Default = withDefault(FillNumberParam, 16)
   const [autoRepeatSlider, setAutoRepeatSlider] = useQueryParam('AutoRepeat', slider3Default)
   // always in dark mode
   const myLightDark = 0
@@ -33,7 +57,17 @@ function JustMandala() {
   // the color that is selected
   const [currentColor, setCurrentColor] = useState('')
   // fill options -- all, half, or one. All and Half only overfill white.  One can overfill anything.
-  const fillDefault = withDefault(StringParam, 'fillAll')
+  const ClampedStringParam = {
+    encode: (value) => String(value),
+    decode: (value) => {
+      const n = String(value);
+      if (n === 'fillAll') {return 'fillAll'}
+      if (n === 'fillHalf') {return 'fillHalf'}
+      if (n === 'fillOne') {return 'fillOne'}
+      return 'fillAll'
+    }
+  }
+  const fillDefault = withDefault(ClampedStringParam, 'fillAll')
   const [fillOption, setFillOption] = useQueryParam('fillstyle', fillDefault)
   // last point to connect to when drawing.  400, 400 is always overwritten.
   const prevXY = useRef([[400, 400]])
@@ -195,6 +229,8 @@ function JustMandala() {
   }
 
   const handleMandalaFileInput = async (event) => {
+    // make undo possible
+    undoRef.current = canvasRef.current.toDataURL("image/png")      
     const selectedFile = event.target.files[0]
 
     if (selectedFile) {
@@ -238,7 +274,7 @@ function JustMandala() {
         slider3={autoRepeatSlider} handleSlider3Change={handleSlider3Change} myLightDark={myLightDark} myPalette={myPalette} setMyPalette={setMyPalette}
         setCurrentColor={setCurrentColor} toastId={toastId} resetCanvas={resetCanvas} ctxRef={ctxRef} color={color} width={width}
         radioValue={fillOption} handleRadioChange={handleRadioChange} handleMandalaFileInput={handleMandalaFileInput} fileInputRef={fileInputRef}
-        handleUndo={handleUndo} canvasRef={canvasRef} undoRef={undoRef} handleDrawFillChange={handleDrawFillChange}
+        handleUndo={handleUndo} canvasRef={canvasRef} undoRef={undoRef} handleDrawFillChange={handleDrawFillChange} fillOption={fillOption}
       />
       </Col></Row>
       </div></Collapse>
