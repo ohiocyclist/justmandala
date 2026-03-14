@@ -65,10 +65,10 @@ describe('fill()', () => {
 
   })
 
-  const e = {buttons: 0}
+  const e = {buttons: 0, type: {includes: jest.fn(() => false)}}
   const f = {buttons: 1}
 
-  test('does nothing when e.buttons != 1', () => {
+  test('does nothing when e.buttons != 1 and type does not include touch or click', () => {
     fill(e, chartRef, ctxRef, color, width, slider1, radioValue)
     expect(ctxRef.current.getImageData).not.toHaveBeenCalled()
     expect(ctxRef.current.putImageData).not.toHaveBeenCalled()
