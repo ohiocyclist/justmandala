@@ -119,6 +119,16 @@ function JustMandala() {
       undoRef.current = canvas.toDataURL("image/png")
     }
     createGrid(symmetrySlider)
+    if (drawFill.current === 'draw') {
+      canvasRef.current.addEventListener('mousemove', () => {
+        canvasRef.current.style.cursor = "url('pencil.png') 6 26, auto"
+      })
+    } else {
+      drawFill.current = 'fill'
+      canvasRef.current.addEventListener('mousemove', () => {
+        canvasRef.current.style.cursor = "url('fill.png') 1 24, auto"
+      })
+    }
   }
 
   const createGrid = (value) => {
@@ -260,8 +270,14 @@ function JustMandala() {
   const handleDrawFillChange = (event) => {
     if (event === 'draw') {
       drawFill.current = 'draw'
+      canvasRef.current.addEventListener('mousemove', () => {
+        canvasRef.current.style.cursor = "url('pencil.png') 6 26, auto"
+      })
     } else {
       drawFill.current = 'fill'
+      canvasRef.current.addEventListener('mousemove', () => {
+        canvasRef.current.style.cursor = "url('fill.png') 1 24, auto"
+      })
     }
   }
 
