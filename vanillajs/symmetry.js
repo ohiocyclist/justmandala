@@ -304,7 +304,6 @@ function drawLine(x1, y1, x2, y2) {
 
   ctx.stroke()
 
-//  ctx.stroke();
 }
 
 // Get local coor in an array
@@ -318,9 +317,96 @@ function getLocalCoordinates(ev) {
   return [ev.offsetX + 0.5, ev.offsetY + 0.5];
 }
 
+function euclidDistance(x, y, w, z) {
+  // find the distance between x,y and w,z
+  return Math.sqrt(Math.pow((x - w), 2) + Math.pow((y - z), 2))
+}
+
+function voronoiTrace(pointList) {
+  // trace out the points that are equidistant from the roots
+  let previ = 0
+  let prevj = 0
+  const boxinbox = 50
+  for (let overi = 0; overi < symmetry; overi += boxinbox) {
+    for (let overj = 0; overj < symmetry; overj += boxinbox) {
+      // give a chance for the prev pixel to be the one to connect
+      for (let i = overi; i < overi + boxinbox; i++) {
+        for (let j = overj; j < overj + boxinbox; j++) {
+          // filter out lines between distant points
+          let distmin = 150
+          for (let k = 0; k < pointList.length; k++) {
+            const distone = euclidDistance(i, j, pointList[k][0], pointList[k][1])
+            if (distone < distmin) {
+              distmin = distone
+            }
+          }
+          // mux points against each other
+          let tubreak = false
+          for (let k = 0; k < pointList.length - 1; k++) {
+            for (let l = k + 1; l < pointList.length; l++ ) {
+              const distone = euclidDistance(i, j, pointList[k][0], pointList[k][1])
+              const disttwo = euclidDistance(i, j, pointList[l][0], pointList[l][1])
+              let hyperx = 0.05
+              // dial back the hyperparameters for the center of the image
+              if (euclidDistance(i, j, xCenter, xCenter) < xCenter) {
+                hyperx = hyperx / 10
+              }
+              if (distone < disttwo * (1 + hyperx) && distone > disttwo * (1 - hyperx) && distone < distmin * 1.05) {
+                  if (euclidDistance(i, j, previ, prevj) > 40) {
+                    previ = i
+                    prevj = j
+                  }
+                  // previ, prevj -- connect dots.  Not really working.
+                  // the dot we want to connect is in a line lost somewhere in 
+                  // the sweep, and not the previous point we just drew
+                  // on the other side of the canvas
+                  drawLine(i, j, previ, prevj)
+                  previ = i
+                  prevj = j
+                  tubreak = true
+                  break
+              }
+            }
+            if (tubreak) {
+              break
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 function randomDraw() {
-  // four styles of random mandala
-  if (Math.random() < 0.2) {
+  ctx.strokeStyle = color
+  ctx.lineWidth = Number(sliderValueDisplay.textContent)
+  // five styles of random mandala
+  const randval = Math.random()
+  if (randval < 0.2) {
+    // Voronoi style
+    let startPoints = [
+        [xCenter + 0 - 100 * Math.random(), xCenter + 0 + 100 * Math.random()], 
+        [xCenter + 0 + 100 * Math.random(), xCenter + 0 + 100 * Math.random()], 
+        [xCenter + 0 - 100 * Math.random(), xCenter + 0 - 100 * Math.random()], 
+        [xCenter + 0 + 100 * Math.random(), xCenter + 0 - 100 * Math.random()], 
+        [xCenter + 100 - 100 * Math.random(), xCenter + 100 + 100 * Math.random()], 
+        [xCenter + 100 + 100 * Math.random(), xCenter + 100 + 100 * Math.random()], 
+        [xCenter + 100 - 100 * Math.random(), xCenter + 100 - 100 * Math.random()], 
+        [xCenter + 100 + 100 * Math.random(), xCenter + 100 - 100 * Math.random()], 
+        [xCenter + 300 - 100 * Math.random(), xCenter + 300 + 100 * Math.random()], 
+        [xCenter + 300 + 100 * Math.random(), xCenter + 300 + 100 * Math.random()], 
+        [xCenter + 300 - 100 * Math.random(), xCenter + 300 - 100 * Math.random()], 
+        [xCenter + 300 + 100 * Math.random(), xCenter + 300 - 100 * Math.random()], 
+    ]
+    let geoPoints = []
+    for (let i = 0; i < startPoints.length; i++) {
+        const newPoints = getSymmetryPoints(startPoints[i][0], startPoints[i][1])
+        for (let j = 0; j < newPoints.length; j++) {
+            geoPoints.push(newPoints[j])
+        }
+    }
+    voronoiTrace(startPoints)
+  } else if (randval < 0.4) {
     // spiral style
     ctx.strokeStyle = color
     let endx = xCenter
@@ -364,7 +450,7 @@ function randomDraw() {
       endx = startx
       endy = starty
     }
-  } else if (Math.random() < 0.2) {
+  } else if (randval < 0.6) {
     // just a bunch of straight lines style
     ctx.strokeStyle = color
     let offset = 40 * Math.random()
@@ -383,7 +469,7 @@ function randomDraw() {
       }
       drawLine(startx, starty, startx + offset, Math.abs(symmetry - starty))
     }
-  } else if (Math.random() < 0.5) {
+  } else if (randval < 0.8) {
     // interlocking crossing lines style
     let workfactor = 12
     let ifactor = 2
