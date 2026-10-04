@@ -18,65 +18,18 @@ let fillOrOtherDisplay = document.getElementById("fillOrOther")
  *
 **/
 const buttons = document.querySelectorAll(".colorbutton");
-document.getElementById("red").addEventListener("click", () => {
-  color = "#FC8181";
-  buttons.forEach(btn => btn.classList.remove("pop-out"))
-  document.getElementById("red").classList.add("pop-out")
-});
-
-document.getElementById("orange").addEventListener("click", () => {
-  color = '#ffa500'
-  buttons.forEach(btn => btn.classList.remove("pop-out"))
-  document.getElementById("orange").classList.add("pop-out")
-});
-
-document.getElementById("yellow").addEventListener("click", () => {
-  color = "#dede20"
-  buttons.forEach(btn => btn.classList.remove("pop-out"))
-  document.getElementById("yellow").classList.add("pop-out")
-})
-
-document.getElementById("blue").addEventListener("click", () => {
-  color = "#4383ED";
-  buttons.forEach(btn => btn.classList.remove("pop-out"))
-  document.getElementById("blue").classList.add("pop-out")
-});
-document.getElementById("darkblue").addEventListener("click", () => {
-  color = "#1213bd";
-  buttons.forEach(btn => btn.classList.remove("pop-out"))
-  document.getElementById("darkblue").classList.add("pop-out")
-});
-document.getElementById("green").addEventListener("click", () => {
-  color = "#2FD175";
-  buttons.forEach(btn => btn.classList.remove("pop-out"))
-  document.getElementById("green").classList.add("pop-out")
-});
-document.getElementById("black").addEventListener("click", () => {
-  color = "#000000";
-  buttons.forEach(btn => btn.classList.remove("pop-out"))
-  document.getElementById("black").classList.add("pop-out")
-});
-document.getElementById("purple").addEventListener("click", () => {
-  color = "#9F7AEA";
-  buttons.forEach(btn => btn.classList.remove("pop-out"))
-  document.getElementById("purple").classList.add("pop-out")
-});
-document.getElementById("magenta").addEventListener("click", () => {
-  color = "#bd12b5";
-  buttons.forEach(btn => btn.classList.remove("pop-out"))
-  document.getElementById("magenta").classList.add("pop-out")
-});
-document.getElementById("brown").addEventListener("click", () => {
-  color = "#483c2c";
-  buttons.forEach(btn => btn.classList.remove("pop-out"))
-  document.getElementById("brown").classList.add("pop-out")
-});
-document.getElementById("eraser").addEventListener("click", () => {
-  color = "#ffffff";
-  buttons.forEach(btn => btn.classList.remove("pop-out"))
-  document.getElementById("eraser").classList.add("pop-out")
-});
-
+const colorlist = [
+  ["red", "#FC8181"], ["orange", "#FFA500"], ["yellow", "#DEDE20"], ["blue", "#4383ED"],
+  ["darkblue", "#1213BD"], ["green", "#2FD175"], ["black", "#000000"], ["purple", "#9F7AEA"],
+  ["magenta", "#BD12B5"], ["brown", "#483C2C"], ["eraser", "#FFFFFF"]
+]
+for (let i = 0; i < colorlist.length; i++) {
+  document.getElementById(colorlist[i][0]).addEventListener("click", () => {
+    color = colorlist[i][1]
+    buttons.forEach(btn => btn.classList.remove("pop-out"))
+    document.getElementById(colorlist[i][0]).classList.add("pop-out")
+  })
+}
 addEventListener("load", load);
 
 // start with draw mode, and a draw pencil
