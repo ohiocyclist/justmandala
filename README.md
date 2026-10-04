@@ -1,5 +1,5 @@
 # justmandala
-Updated version of the Just Mandala project found here on GitHub
+Updated version of the Just Mandala project found here on GitHub ( https://github.com/florianjs/Mandala-JS/tree/master )
 
 Like the other project, makes Mandalas using symmetry.
 
