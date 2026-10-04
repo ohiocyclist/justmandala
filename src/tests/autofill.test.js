@@ -33,19 +33,19 @@ describe("getFillableAreas", () => {
     const bgdata = new Uint8ClampedArray(width * width * 4).fill(255);
 
     // Mock symmetry points → always return one point
-    getMandalaHelpers.getSymmetryPoints.mockReturnValue([[5, 5]]);
+    getMandalaHelpers.getSymmetryPoints.mockReturnValue([[5, 5], [4, 6]]);
 
     // Mock white detection → always white
     getMandalaHelpers.isWhite.mockReturnValue(true);
 
     // Mock adjacency → return a small cluster
-    getMandalaHelpers.getAdjacentWhite.mockReturnValue([[5, 5], [6, 5]]);
+    getMandalaHelpers.getAdjacentWhite.mockReturnValue([[4, 5], [5, 5], [6, 5]]);
 
     const fillableAreas = [];
     autoFill.getFillableAreas(width, slider1, bgdata, fillableAreas, radioValue);
 
     expect(fillableAreas.length).toBeGreaterThan(0);
-    expect(fillableAreas[0]).toEqual([[5, 5], [6, 5]]);
+    expect(fillableAreas[0]).toEqual([[4, 5], [5, 5], [6, 5]]);
   });
 
   test("does not add areas that touch excluded corners", () => {
