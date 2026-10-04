@@ -19,17 +19,7 @@
       ></canvas>
     </div>
     <h3>Brush Color:</h3>
-    <button id="red" style="background-color: #FC8181" class="colorbutton"></button>
-    <button id="orange" style="background-color: #ffa500" class="colorbutton"></button>
-    <button id="yellow" style="background-color: #dede20" class="colorbutton"></button>
-    <button id="green" style="background-color: #2FD175" class="colorbutton"></button>
-    <button id="blue" style="background-color: #4383ED" class="colorbutton"></button>
-    <button id="darkblue" style="background-color: #1213bd" class="colorbutton"></button>
-    <button id="purple" style="background-color: #9F7AEA" class="colorbutton"></button>
-    <button id="magenta" style="background-color: #bd12b5" class="colorbutton"></button>
-    <button id="brown" style="background-color: #483c2c" class="colorbutton"></button>
-    <button id="black" style="background-color: black" class="colorbutton"></button>
-    <button id="eraser" style="background-color: white; color: black; cursor: pointer; border-radius: 5px;" class="colorbutton">Eraser</button>
+    <div id='colorbuttons'></div>
     <h3>Brush Size: <span id="sliderValue"></span></h3>    
     <input type="range" id="mySlider" min="2" max="24" value="4" style="width: 300px">
     <h3>Mirror Factor: <span id="sliderValue2"></span></h3>
@@ -38,7 +28,7 @@
     <button id="loadButton">Clear Canvas</button>
     <button id="randButton">Random Draw</button>
     <button id="drawFillSwap">Toggle Draw/Fill</button> currently set to: <span id="drawOrFill"></span>
-    <button id="drawFillOther">Toggle Fill as Every/Every Other</button> currently set to: <span id="fillOrOther"></span>
+    <button id="drawFillOther">Toggle Fill as Every/Every Other/Only One</button> currently set to: <span id="fillOrOther"></span>
     </div>
   </body>
 </html>

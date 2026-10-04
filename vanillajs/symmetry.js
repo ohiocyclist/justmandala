@@ -17,12 +17,28 @@ let fillOrOtherDisplay = document.getElementById("fillOrOther")
  *  Colors button event listner example
  *
 **/
-const buttons = document.querySelectorAll(".colorbutton");
 const colorlist = [
-  ["red", "#FC8181"], ["orange", "#FFA500"], ["yellow", "#DEDE20"], ["blue", "#4383ED"],
-  ["darkblue", "#1213BD"], ["green", "#2FD175"], ["black", "#000000"], ["purple", "#9F7AEA"],
-  ["magenta", "#BD12B5"], ["brown", "#483C2C"], ["eraser", "#FFFFFF"]
+  ["red", "#FC8181"], ["orange", "#FFA500"], ["yellow", "#DEDE20"], ["green", "#2FD175"], 
+  ["darkgreen", "#108010"], ["blue", "#4383ED"],["darkblue", "#1213BD"], ["purple", "#9F7AEA"],
+  ["magenta", "#BD12B5"], ["brown", "#483C2C"], ["black", "#000000"], ["eraser", "#FFFFFF"]
 ]
+const myDiv = document.getElementById('colorbuttons')
+// programmatically create as well as wire up the buttons
+for (let i = 0; i < colorlist.length; i++) {
+  const button = document.createElement('button')
+  button.id = colorlist[i][0]
+  button.style.backgroundColor = colorlist[i][1]
+  if (colorlist[i][0] === 'eraser') {
+    button.style.color = 'black'
+    button.innerText = colorlist[i][0]
+  }
+  button.style.padding = '15px 32px'
+  button.style.borderRadius = '5px'
+  button.style.margin = '0 5px'
+  button.className = 'colorbutton'
+  myDiv.appendChild(button)
+}
+const buttons = document.querySelectorAll(".colorbutton")
 for (let i = 0; i < colorlist.length; i++) {
   document.getElementById(colorlist[i][0]).addEventListener("click", () => {
     color = colorlist[i][1]
@@ -30,6 +46,10 @@ for (let i = 0; i < colorlist.length; i++) {
     document.getElementById(colorlist[i][0]).classList.add("pop-out")
   })
 }
+
+// default color
+document.getElementById('black').classList.add("pop-out")
+
 addEventListener("load", load);
 
 // start with draw mode, and a draw pencil
@@ -60,7 +80,9 @@ function load() {
   let scale = 1
   let isPinching = false
 
-  getcanvas.addEventListener("mousemove", drawFill);
+  // fill areas with a click without moving the mouse, draw on movement
+  getcanvas.addEventListener("mousemove", drawFill)
+  getcanvas.addEventListener("mousedown", drawFill)
   getcanvas.addEventListener("touchstart", (e) => {
     // clear draw coordinates
     var coord = getLocalCoordinates(e)
@@ -77,6 +99,7 @@ function load() {
 }
 
 function drawFillSwap() {
+  // trade between draw mode and fill mode
   if (drawOrFill === 'draw') {
     canvas.addEventListener('mousemove', () => {
       canvas.style.cursor = "url('fill.png') 1 24, auto"
@@ -91,8 +114,11 @@ function drawFillSwap() {
 }
 
 function drawFillOtherSwap() {
+  // trade between fill all areas and fill part
   if (fillOrOther === 'every') {
     fillOrOther = 'other'
+  } else if (fillOrOther === 'other') {
+    fillOrOther = 'one'
   } else {
     fillOrOther = 'every'
   }
@@ -116,6 +142,7 @@ function isWhite({ r, g, b, a }) {
 }
 
 function getAdjacentWhite(ctx, startX, startY, width, height) {
+    // determine what area we are filling in
     const stack = new Int32Array(width * height * 2)
     const img = ctx.getImageData(0, 0, width, width)
     const data = img.data
@@ -175,11 +202,15 @@ function hexToRgb(hex) {
 }
 
 function fill(e) {
+  // fill areas with color 
   var coord = getLocalCoordinates(e);
   if (e.buttons == 1 || e.type == "touchmove") {
     var x = Math.floor(coord[0])
     var y = Math.floor(coord[1])
     let symmetricPoints = getSymmetryPoints(x, y)
+    if (fillOrOther === 'one') {
+      symmetricPoints = [[x, y]]
+    }
     const img = ctx.getImageData(0, 0, symmetry, symmetry)
     const data = img.data
     let usecolor = hexToRgb(color)
@@ -213,8 +244,6 @@ function draw(e) {
   var x = coord[0]
   var y = coord[1]
 
-  // (2 * Math.PI) / 16
-
   ctx.strokeStyle = color
   ctx.lineWidth = Number(sliderValueDisplay.textContent)
 
@@ -246,6 +275,9 @@ function getSymmetryPoints(x, y) {
     x = ctrX + Math.sin(theta) * dist;
     y = ctrY - Math.cos(theta) * dist;
     result.push([x, y]);
+    // this mirrors the points around the spoke of the symmetry
+    // hence symmetry === 2 is actually 4 etc.
+    // but it allows the user to easily draw closed areas
     if (true) {
       x = ctrX - Math.sin(theta) * dist;
       result.push([x, y]);
@@ -256,6 +288,7 @@ function getSymmetryPoints(x, y) {
 }
 
 function drawLine(x1, y1, x2, y2) {
+  // connect a beginning and ending points
   startPoints = getSymmetryPoints(x1, y1);
   endPoints = getSymmetryPoints(x2, y2);
 
@@ -269,9 +302,9 @@ function drawLine(x1, y1, x2, y2) {
     ctx.lineTo(endPoints[i][0], endPoints[i][1]);
   }
 
-  ctx.stroke();
+  ctx.stroke()
 
-  ctx.stroke();
+//  ctx.stroke();
 }
 
 // Get local coor in an array
@@ -416,6 +449,8 @@ function randomDraw() {
     }
   }
 }
+
+// wire up sliders and buttons
 
 document.getElementById("loadButton").addEventListener("click", load);
 document.getElementById("randButton").addEventListener("click", randomDraw);
