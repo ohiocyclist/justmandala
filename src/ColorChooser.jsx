@@ -66,7 +66,11 @@ function ColorChooser({ myPalette, setMyPalette, myLightDark, handleFileInput, s
             }
         }
         if (anyUpdate) {
+            colors.current = prevColors
             setColorHelper(prevColors)
+            if (setCurrentColor) {
+              setCurrentColor(prevColors[selectedColor])
+            }
         }
     }
   }, [myPalette])
@@ -78,7 +82,9 @@ function ColorChooser({ myPalette, setMyPalette, myLightDark, handleFileInput, s
     if (setCurrentColor) {
       setCurrentColor(newColor)
     }
-    resetPalette()
+    if (skipPalButton) {
+      resetPalette()
+    }
   }
 
   const resetPalette = () => {

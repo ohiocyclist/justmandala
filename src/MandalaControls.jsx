@@ -6,7 +6,8 @@ import { autoFill } from './autoFill'
 import { randomDraw} from './draw'
 
 export function MandalaControls({slider1, handleSlider1Change, slider2, handleSlider2Change, slider3, handleSlider3Change, myLightDark, myPalette, setMyPalette, setCurrentColor,
-    toastId, resetCanvas, ctxRef, color, width, radioValue, handleRadioChange, handleMandalaFileInput, fileInputRef, handleUndo, canvasRef, undoRef, handleDrawFillChange, fillOption}) {
+    toastId, resetCanvas, ctxRef, color, width, radioValue, handleRadioChange, handleMandalaFileInput, fileInputRef, handleUndo, canvasRef, undoRef, handleDrawFillChange, fillOption,
+    handleTesselate, downloadMandala}) {
     
     const randomDrawUndoWrapper = (width, slider1, slider2, ctxRef, color, canvasRef, undoRef) => {
       // make undo possible
@@ -19,6 +20,8 @@ export function MandalaControls({slider1, handleSlider1Change, slider2, handleSl
       undoRef.current = canvasRef.current.toDataURL("image/png")      
       autoFill.autoFill(ctxRef, width, myPalette, slider1, slider3, radioValue)
     }
+    
+    const downloadMandalaWrap = () => {downloadMandala(canvasRef)}
 
     return <>
     <Row><Col className='text-center'>
@@ -63,7 +66,13 @@ export function MandalaControls({slider1, handleSlider1Change, slider2, handleSl
         <Button onClick={() => {autoFillUndoWrapper(ctxRef, width, myPalette, slider1, slider3, radioValue, canvasRef, undoRef)}}>Automatically Fill Areas</Button>
       </div>
       <div style={{display: 'inline-block', marginLeft: '20px'}}>
+        <Button onClick={() => {handleTesselate()}}>Tesselate</Button>
+      </div>
+      <div style={{display: 'inline-block', marginLeft: '20px'}}>
         <Button onClick={() => {handleUndo()}}>Undo</Button>
+      </div>
+      <div style={{display: 'inline-block', marginLeft: '20px'}}>
+        <Button id="Download_Mandala" onClick={downloadMandalaWrap}>Download Mandala</Button>
       </div>
     </Col></Row><Row><Col className='text-center'>
     <h2>Choose fill behavior:</h2>

@@ -1,18 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react'
 import * as d3 from "d3"
 import { useQueryParam, StringParam, withDefault, NumberParam } from 'use-query-params'
-import { Container, Row, Col } from 'react-bootstrap'
+import { Button, Container, Row, Col } from 'react-bootstrap'
 import "bootstrap/dist/css/bootstrap.min.css"
 import fill from './fill'
 import { draw, drawGrid } from './draw'
+import {createTessel} from './tessel'
 import { getMandalaHelpers } from './getlocalcoordinates'
 import Collapse from 'react-bootstrap/Collapse'
 import { MandalaControls } from './MandalaControls'
+import { downloadMandala } from './downloadmandala'
 import "./App.css"
 
 function JustMandala() {
   // refs for the drawings.  topCtxRef holds the gridlines, on top of and transparent to the drawing
   const chartRef = useRef(null)
+  const hideRef = useRef(null)
+  const shrinkRef = useRef(null)
   const ctxRef = useRef(null)
   const topCtxRef = useRef(null)
   // QueryParam set sliders.  Slider 1 is number of points.  Slider 2 is brushsize.  Slider 3 is color repeat
@@ -97,8 +101,10 @@ function JustMandala() {
     let ctx
     d3.select(chartRef.current).selectAll("canvas").remove()
     let canvas = document.createElement('canvas')
+    canvas.id = "drawcanvas"
     canvas.width = width
     canvas.height = width
+    canvas.zIndex = 5
     // allow the grid to place overtop
     chartRef.current.style.position = 'relative'
     chartRef.current.appendChild(canvas)
@@ -133,6 +139,10 @@ function JustMandala() {
     topCtxRef.current = topCtx
     // react doesn't keep up with the slider1 value for here, we need to keep up for ourselves
     drawGrid(topCtxRef, width, value)
+  }
+
+  const createTesselWrap = () => {
+    createTessel(d3, hideRef, shrinkRef, width)
   }
 
   const handleUndo = () => {
@@ -266,7 +276,7 @@ function JustMandala() {
         <h1>Symmetry Based Mandalas</h1>
         </Col></Row><Row><Col><p><font color="#FFF">Click and drag to draw, change button to fill, Gridlines in gray are not part of the output, or</font></p></Col>
       <Col className='text-end'>
-      <button onClick={handleOpen}>{(trayOpen ? 'Hide' : 'Show')} Controls</button>
+      <Button onClick={handleOpen}>{(trayOpen ? 'Hide' : 'Show')} Controls</Button>
       </Col></Row><Collapse in={trayOpen}>
         <div id="control-drawer">
       <Row><Col className='text-center'>
@@ -274,7 +284,8 @@ function JustMandala() {
         slider3={autoRepeatSlider} handleSlider3Change={handleSlider3Change} myLightDark={myLightDark} myPalette={myPalette} setMyPalette={setMyPalette}
         setCurrentColor={setCurrentColor} toastId={toastId} resetCanvas={resetCanvas} ctxRef={ctxRef} color={color} width={width}
         radioValue={fillOption} handleRadioChange={handleRadioChange} handleMandalaFileInput={handleMandalaFileInput} fileInputRef={fileInputRef}
-        handleUndo={handleUndo} canvasRef={canvasRef} undoRef={undoRef} handleDrawFillChange={handleDrawFillChange} fillOption={fillOption}
+        handleUndo={handleUndo} canvasRef={canvasRef} undoRef={undoRef} handleDrawFillChange={handleDrawFillChange} fillOption={fillOption} 
+        handleTesselate={createTesselWrap} downloadMandala={downloadMandala}
       />
       </Col></Row>
       </div></Collapse>
@@ -289,6 +300,10 @@ function JustMandala() {
           onClick={(e) => {overDraw(e, canvasRef, undoRef)}}
           className="mx-auto"
           style={{width: `${width}px`, height: `${width}px`, backgroundColor: 'white', marginTop: '20px', display: 'block', touchAction: 'none' }}
+      ></div>
+      <div
+        ref={hideRef}
+        style={{width: '0px', height: '0px', display: 'none'}}
       ></div>
     </Col>
     </Row>

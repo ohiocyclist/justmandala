@@ -12,18 +12,8 @@ export class autoFill {
       for (let prey = 0; prey < width / 2; prey++) {
         // work outward from the center (for order of color purposes)
         // we skip some pixels for speed; that can miss areas sometimes if they're very small
-        let x = 0
-        if (prex % 2 === 0) {
-          x = Math.abs(width / 2 - prex)
-        } else {
-          x = width / 2 + prex
-        }
-        let y = 0 
-        if (prey % 2 === 0) {
-          y = Math.abs(width / 2 - prey)
-        } else {
-          y = width / 2 + prey
-        }
+        let x = prex % 2 === 0 ? Math.abs(width / 2 - prex) : width / 2 + prex
+        let y = prey % 2 === 0 ? Math.abs(width / 2 - prey) : width / 2 + prey
         // do this in symmetric points order
         // don't revisit seen points
         let symmetricPoints = getMandalaHelpers.getSymmetryPoints(x, y, width, slider1)
@@ -83,6 +73,7 @@ export class autoFill {
 
   static autoFill = (ctxRef, width, myPalette, slider1, slider3, radioValue) => {
     // first, traverse the entire image and find all the fillable areas
+    let start = Date.now()
     const fillableAreas = []
     const ctx = ctxRef.current
     const img = ctx.getImageData(0, 0, width, width)
@@ -94,6 +85,6 @@ export class autoFill {
     const img2 = ctx.getImageData(0, 0, width, width)
     this.stepThroughFillables(img2, fillableAreas, palArr, width, slider3)
     ctx.putImageData(img2, 0, 0)
-    //console.log("done")
+    //console.log("done whole", Date.now() - start)
   }
 }

@@ -55,24 +55,26 @@ export function draw(e, chartRef, ctxRef, width, slider1, slider2, color, prevXY
     var y = coord[1]
 
     let ctx = ctxRef.current
-    ctx.strokeStyle = color
-    ctx.lineWidth = Number(slider2)
+    if (ctx) {
+      ctx.strokeStyle = color
+      ctx.lineWidth = Number(slider2)
 
-    if (e.buttons == 1) {
-      // continue a mouse move
-      drawLine(prevXY[0], prevXY[1], x, y, ctxRef, width, slider1, slider2, color)
-    } else if (e.type == "click" || e.type == "touchstart") {
-      // this is the start of a line series so we reset previous here
+      if (e.buttons == 1) {
+        // continue a mouse move
+        drawLine(prevXY[0], prevXY[1], x, y, ctxRef, width, slider1, slider2, color)
+      } else if (e.type == "click" || e.type == "touchstart") {
+        // this is the start of a line series so we reset previous here
+        prevXY[0] = x
+        prevXY[1] = y
+        drawLine(prevXY[0], prevXY[1], x, y, ctxRef, width, slider1, slider2, color)
+      } else if (e.type == "touchmove" || e.type.includes("touch")) {
+        // continue a touch move
+        drawLine(prevXY[0], prevXY[1], x, y, ctxRef, width, slider1, slider2, color)
+      }
+      // connect the next segment to the current one
       prevXY[0] = x
       prevXY[1] = y
-      drawLine(prevXY[0], prevXY[1], x, y, ctxRef, width, slider1, slider2, color)
-    } else if (e.type == "touchmove" || e.type.includes("touch")) {
-      // continue a touch move
-      drawLine(prevXY[0], prevXY[1], x, y, ctxRef, width, slider1, slider2, color)
     }
-    // connect the next segment to the current one
-    prevXY[0] = x
-    prevXY[1] = y
   }
 
 function drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter) {
