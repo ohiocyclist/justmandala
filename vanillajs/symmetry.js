@@ -327,13 +327,16 @@ function voronoiTrace(pointList) {
   let previ = 0
   let prevj = 0
   const boxinbox = 50
-  for (let overi = 0; overi < symmetry; overi += boxinbox) {
-    for (let overj = 0; overj < symmetry; overj += boxinbox) {
+  for (let overi = xCenter; overi < symmetry; overi += boxinbox) {
+    for (let overj = xCenter; overj < symmetry; overj += boxinbox) {
       // give a chance for the prev pixel to be the one to connect
       for (let i = overi; i < overi + boxinbox; i++) {
         for (let j = overj; j < overj + boxinbox; j++) {
+          if (euclidDistance(i, j, xCenter, xCenter) >= xCenter) {
+            continue
+          }
           // filter out lines between distant points
-          let distmin = 150
+          let distmin = 175
           for (let k = 0; k < pointList.length; k++) {
             const distone = euclidDistance(i, j, pointList[k][0], pointList[k][1])
             if (distone < distmin) {
@@ -346,20 +349,13 @@ function voronoiTrace(pointList) {
             for (let l = k + 1; l < pointList.length; l++ ) {
               const distone = euclidDistance(i, j, pointList[k][0], pointList[k][1])
               const disttwo = euclidDistance(i, j, pointList[l][0], pointList[l][1])
-              let hyperx = 0.05
-              // dial back the hyperparameters for the center of the image
-              if (euclidDistance(i, j, xCenter, xCenter) < xCenter) {
-                hyperx = hyperx / 10
-              }
-              if (distone < disttwo * (1 + hyperx) && distone > disttwo * (1 - hyperx) && distone < distmin * 1.05) {
-                  if (euclidDistance(i, j, previ, prevj) > 40) {
+              let hyperx = 1
+              if (distone < disttwo + hyperx && distone > disttwo - hyperx && distone < distmin + hyperx) {
+                  if (euclidDistance(i, j, previ, prevj) > 10) {
                     previ = i
                     prevj = j
                   }
-                  // previ, prevj -- connect dots.  Not really working.
-                  // the dot we want to connect is in a line lost somewhere in 
-                  // the sweep, and not the previous point we just drew
-                  // on the other side of the canvas
+                  
                   drawLine(i, j, previ, prevj)
                   previ = i
                   prevj = j
@@ -387,17 +383,35 @@ function randomDraw() {
     let startPoints = [
         [xCenter + 0 - 100 * Math.random(), xCenter + 0 + 100 * Math.random()], 
         [xCenter + 0 + 100 * Math.random(), xCenter + 0 + 100 * Math.random()], 
+        [xCenter + 50 + 50 * Math.random(), xCenter - 50 + 100 * Math.random()], 
         [xCenter + 0 - 100 * Math.random(), xCenter + 0 - 100 * Math.random()], 
         [xCenter + 0 + 100 * Math.random(), xCenter + 0 - 100 * Math.random()], 
         [xCenter + 100 - 100 * Math.random(), xCenter + 100 + 100 * Math.random()], 
         [xCenter + 100 + 100 * Math.random(), xCenter + 100 + 100 * Math.random()], 
+        [xCenter + 150 + 50 * Math.random(), xCenter - 50 + 100 * Math.random()], 
         [xCenter + 100 - 100 * Math.random(), xCenter + 100 - 100 * Math.random()], 
         [xCenter + 100 + 100 * Math.random(), xCenter + 100 - 100 * Math.random()], 
         [xCenter + 300 - 100 * Math.random(), xCenter + 300 + 100 * Math.random()], 
         [xCenter + 300 + 100 * Math.random(), xCenter + 300 + 100 * Math.random()], 
+        [xCenter + 200 + 100 * Math.random(), xCenter + 200 + 100 * Math.random()], 
         [xCenter + 300 - 100 * Math.random(), xCenter + 300 - 100 * Math.random()], 
         [xCenter + 300 + 100 * Math.random(), xCenter + 300 - 100 * Math.random()], 
     ]
+    // try to keep the points in a narrower comb
+    if (Math.random() < 0.5) {
+        startPoint = [
+            [xCenter + 300 + 100 * Math.random(), xCenter + 50 + 50 * Math.random()],
+            [xCenter + 300 + 100 * Math.random(), xCenter - 25 + 50 * Math.random()],
+            [xCenter + 250 + 100 * Math.random(), xCenter - 10 + 20 * Math.random()],
+            [xCenter + 300 + 100 * Math.random(), xCenter - 50 - 50 * Math.random()],
+            [xCenter + 150 + 100 * Math.random(), xCenter + 20 + 20 * Math.random()],
+            [xCenter + 150 + 100 * Math.random(), xCenter - 10 + 20 * Math.random()],
+            [xCenter + 100 + 100 * Math.random(), xCenter - 5 + 10 * Math.random()],
+            [xCenter + 150 + 100 * Math.random(), xCenter - 20 - 20 * Math.random()],
+            [xCenter + 0 + 20 * Math.random(), xCenter + 0 + 20 * Math.random()],
+            [xCenter + 0 + 20 * Math.random(), xCenter - 0 - 20 * Math.random()],
+        ]
+    }
     let geoPoints = []
     for (let i = 0; i < startPoints.length; i++) {
         const newPoints = getSymmetryPoints(startPoints[i][0], startPoints[i][1])
