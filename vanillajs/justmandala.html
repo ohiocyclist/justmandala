@@ -27,8 +27,26 @@
     <div>
     <button id="loadButton">Clear Canvas</button>
     <button id="randButton">Random Draw</button>
-    <button id="drawFillSwap">Toggle Draw/Fill</button> currently set to: <span id="drawOrFill"></span>
-    <button id="drawFillOther">Toggle Fill as Every/Every Other/Only One</button> currently set to: <span id="fillOrOther"></span>
+    Toggle Pointer Type: 
+    <input type="radio" name="pointer" value="draw" id="draw"><label for="draw">Draw</label>
+    <input type="radio" name="pointer" value="fill" id="fill"><label for="fill">Fill</label>
+    <input type="radio" name="pointer" value="drop" id="drop"><label for="drop">Color Dropper</label>
+    &nbsp;Toggle Fill Type:
+    <input type="radio" name="fillstyle" value="every" id="every"><label for="every">Every Symmetric</label>
+    <input type="radio" name="fillstyle" value="other" id="other"><label for="other">Every Other Symmetric</label>
+    <input type="radio" name="fillstyle" value="one" id="one"><label for="one">Just the clicked area</label>
     </div>
+    <div>
+    <h4>
+    Flexible Color:
+    </h4>
+    </div>
+    <div>
+    Red: <span id="rsliderValue"></span>
+    <input type="range" id="redSlider" min="0" max="255" value="127" style="width: 150px">
+    Green: <span id="gsliderValue"></span>
+    <input type="range" id="greenSlider" min="0" max="255" value="127" style="width: 150px">
+    Blue: <span id="bsliderValue"></span>
+    <input type="range" id="blueSlider" min="0" max="255" value="127" style="width: 150px">
   </body>
 </html>

@@ -7,11 +7,17 @@ let slider = document.getElementById("mySlider")
 let sliderValueDisplay = document.getElementById("sliderValue")
 let slider2 = document.getElementById("mySlider2")
 let sliderValueDisplay2 = document.getElementById("sliderValue2")
+let rslider = document.getElementById("redSlider")
+let rsliderValueDisplay = document.getElementById("rsliderValue")
+let gslider = document.getElementById("greenSlider")
+let gsliderValueDisplay = document.getElementById("gsliderValue")
+let bslider = document.getElementById("blueSlider")
+let bsliderValueDisplay = document.getElementById("bsliderValue")
 let color = "#1A202C"
 let drawOrFill = 'draw'
-let drawOrFillDisplay = document.getElementById("drawOrFill")
 let fillOrOther = 'every'
 let fillOrOtherDisplay = document.getElementById("fillOrOther")
+let curclicked = "black"
 
 /**
  *  Colors button event listner example
@@ -20,7 +26,8 @@ let fillOrOtherDisplay = document.getElementById("fillOrOther")
 const colorlist = [
   ["red", "#FC8181"], ["orange", "#FFA500"], ["yellow", "#DEDE20"], ["green", "#2FD175"], 
   ["darkgreen", "#108010"], ["blue", "#4383ED"],["darkblue", "#1213BD"], ["purple", "#9F7AEA"],
-  ["magenta", "#BD12B5"], ["brown", "#483C2C"], ["black", "#000000"], ["eraser", "#FFFFFF"]
+  ["magenta", "#BD12B5"], ["brown", "#483C2C"], ["black", "#000000"], ["flex", "#808080"],
+  ["eraser", "#FFFFFF"]
 ]
 const myDiv = document.getElementById('colorbuttons')
 // programmatically create as well as wire up the buttons
@@ -42,6 +49,7 @@ const buttons = document.querySelectorAll(".colorbutton")
 for (let i = 0; i < colorlist.length; i++) {
   document.getElementById(colorlist[i][0]).addEventListener("click", () => {
     color = colorlist[i][1]
+    curclicked = colorlist[i][0]
     buttons.forEach(btn => btn.classList.remove("pop-out"))
     document.getElementById(colorlist[i][0]).classList.add("pop-out")
   })
@@ -99,34 +107,27 @@ function load() {
 }
 
 function drawFillSwap() {
-  // trade between draw mode and fill mode
-  if (drawOrFill === 'draw') {
+  // set to the correct cursor
+  if (drawOrFill === 'fill') {
     canvas.addEventListener('mousemove', () => {
       canvas.style.cursor = "url('fill.png') 1 24, auto"
     })
-    drawOrFill = 'fill'
+  } else if (drawOrFill === 'drop') {
+    canvas.addEventListener('mousemove', () => {
+      canvas.style.cursor = "url('dropper.png') 6 26, auto"
+    })
   } else {
     canvas.addEventListener('mousemove', () => {
       canvas.style.cursor = "url('pencil.png') 6 26, auto"
     })
-    drawOrFill = 'draw'
-  }
-}
-
-function drawFillOtherSwap() {
-  // trade between fill all areas and fill part
-  if (fillOrOther === 'every') {
-    fillOrOther = 'other'
-  } else if (fillOrOther === 'other') {
-    fillOrOther = 'one'
-  } else {
-    fillOrOther = 'every'
   }
 }
 
 function drawFill(e) {
   if (drawOrFill === 'draw') {
     draw(e)
+  } else if (drawOrFill === 'drop') {
+    drop(e)
   } else {
     fill(e)
   }
@@ -201,6 +202,10 @@ function hexToRgb(hex) {
     };
 }
 
+function rgbToHex(r, g, b) {
+  return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1).toUpperCase()}`
+}  
+
 function fill(e) {
   // fill areas with color 
   var coord = getLocalCoordinates(e);
@@ -238,7 +243,7 @@ function fill(e) {
 }
 
 function draw(e) {
-  var coord = getLocalCoordinates(e);
+  var coord = getLocalCoordinates(e)
   // console.log(" getLocalCoordinates[0] " + coord[0]);
 
   var x = coord[0]
@@ -257,6 +262,37 @@ function draw(e) {
   }
   prevX = x
   prevY = y
+}
+
+function colorUpdate(data, doupdate) {
+  document.getElementById("flex").style.backgroundColor = rgbToHex(data[0], data[1], data[2])
+  // if we're currently clicked, the color has changed, but the button setup hasn't fired
+  if (curclicked === 'flex') {
+    color = rgbToHex(data[0], data[1], data[2])
+  }
+  if (doupdate) {
+    rslider.value = data[0]
+    rsliderValueDisplay.textContent = data[0]
+    gslider.value = data[1]
+    gsliderValueDisplay.textContent = data[1]
+    bslider.value = data[2]
+    bsliderValueDisplay.textContent = data[2]
+  }
+  document.getElementById("flex").addEventListener("click", () => {
+    color = rgbToHex(data[0], data[1], data[2])
+    curclicked = "flex"
+    buttons.forEach(btn => btn.classList.remove("pop-out"))
+    document.getElementById("flex").classList.add("pop-out")
+  })
+}
+
+function drop(e) {
+  var coord = getLocalCoordinates(e)
+  if (e.buttons == 1 || e.type == "touchmove") {
+      const { data } = ctx.getImageData(coord[0], coord[1], 1, 1)
+      //console.log(`dropper, ${data[0]} ${data[1]} ${data[2]}`)
+      colorUpdate(data, true)
+  }
 }
 
 function getSymmetryPoints(x, y) {
@@ -298,8 +334,8 @@ function drawLine(x1, y1, x2, y2) {
   ctx.lineCap = "round";
 
   for (var i = 0; i < startPoints.length; i++) {
-    ctx.moveTo(startPoints[i][0], startPoints[i][1]);
-    ctx.lineTo(endPoints[i][0], endPoints[i][1]);
+    ctx.moveTo(startPoints[i][0], startPoints[i][1])
+    ctx.lineTo(endPoints[i][0], endPoints[i][1])
   }
 
   ctx.stroke()
@@ -309,12 +345,12 @@ function drawLine(x1, y1, x2, y2) {
 // Get local coor in an array
 function getLocalCoordinates(ev) {
   if (ev.type == "touchmove") {
-    var touch = ev.touches[0] || ev.changedTouches[0];
-    var realTarget = document.elementFromPoint(touch.clientX, touch.clientY);
-    ev.offsetX = touch.clientX - realTarget.getBoundingClientRect().x;
-    ev.offsetY = touch.clientY - realTarget.getBoundingClientRect().y;
+    var touch = ev.touches[0] || ev.changedTouches[0]
+    var realTarget = document.elementFromPoint(touch.clientX, touch.clientY)
+    ev.offsetX = touch.clientX - realTarget.getBoundingClientRect().x
+    ev.offsetY = touch.clientY - realTarget.getBoundingClientRect().y
   }
-  return [ev.offsetX + 0.5, ev.offsetY + 0.5];
+  return [ev.offsetX + 0.5, ev.offsetY + 0.5]
 }
 
 function euclidDistance(x, y, w, z) {
@@ -378,7 +414,45 @@ function randomDraw() {
   ctx.lineWidth = Number(sliderValueDisplay.textContent)
   // five styles of random mandala
   const randval = Math.random()
-  if (randval < 0.2) {
+  if (randval < 0.17) {
+    // geometric forms style
+    for (i = -10; i < xCenter - 255; i += 55) {
+      // skew y for the broader spectrum
+      let jend = 0
+      // more space to fill further out
+      if (i > 150) {
+        jend = 2
+      }
+      // need more fill for less symmetry
+      if (slider2.value < 9) {
+        jend++
+      }
+      for (j = 0; j <= jend; j++) {
+        let subdivide = 3
+        let jittersize = 20 * Math.random() - 10
+        let randdivive = Math.random()
+        if (randdivive < 0.2) {
+          subdivide = 5
+        } else if (randdivive < 0.4) {
+          subdivide = 6
+        } else if (randdivive < 0.6) {
+          subdivide = 7
+        } else if (randdivive < 0.8) {
+          subdivide = 17
+        }
+        let figscale = 50
+        let lastlocs = [xCenter + i, xCenter + figscale + i]
+        for (angle = 0; angle <= Math.PI * 2; angle += Math.PI * 2 / subdivide) {
+          const thislocs = [Math.cos(angle) * figscale + xCenter + i + jittersize, 
+                        Math.sin(angle) * figscale + xCenter + i + j * figscale * 2 + jittersize]
+          if (angle > 0) {
+            drawLine(lastlocs[0], lastlocs[1], thislocs[0], thislocs[1])
+          }
+          lastlocs = thislocs
+        }
+      }
+    }
+  } else if (randval < 0.34) {
     // Voronoi style
     let startPoints = [
         [xCenter + 0 - 100 * Math.random(), xCenter + 0 + 100 * Math.random()], 
@@ -420,7 +494,7 @@ function randomDraw() {
         }
     }
     voronoiTrace(startPoints)
-  } else if (randval < 0.4) {
+  } else if (randval < 0.51) {
     // spiral style
     ctx.strokeStyle = color
     let endx = xCenter
@@ -464,7 +538,7 @@ function randomDraw() {
       endx = startx
       endy = starty
     }
-  } else if (randval < 0.6) {
+  } else if (randval < 0.68) {
     // just a bunch of straight lines style
     ctx.strokeStyle = color
     let offset = 40 * Math.random()
@@ -483,7 +557,7 @@ function randomDraw() {
       }
       drawLine(startx, starty, startx + offset, Math.abs(symmetry - starty))
     }
-  } else if (randval < 0.8) {
+  } else if (randval < 0.84) {
     // interlocking crossing lines style
     let workfactor = 12
     let ifactor = 2
@@ -552,36 +626,68 @@ function randomDraw() {
 
 // wire up sliders and buttons
 
-document.getElementById("loadButton").addEventListener("click", load);
-document.getElementById("randButton").addEventListener("click", randomDraw);
+document.getElementById("loadButton").addEventListener("click", load)
+document.getElementById("randButton").addEventListener("click", randomDraw)
 
 sliderValueDisplay.textContent = 4
 
 slider.addEventListener("input", (event) => {
-   	const sliderValue = event.target.value;
-   	sliderValueDisplay.textContent = sliderValue;
+   	const sliderValue = event.target.value
+   	sliderValueDisplay.textContent = sliderValue
 });
 
-drawOrFillDisplay.textContent = drawOrFill
+const pointerButtons = document.querySelectorAll('input[name="pointer"]')
 
-document.getElementById("drawFillSwap").addEventListener("click", () => {
-  drawFillSwap()
-  drawOrFillDisplay.textContent = drawOrFill
+pointerButtons.forEach(radio => {
+  radio.addEventListener('change', () => {
+    drawOrFill = document.querySelector('input[name="pointer"]:checked').value
+    drawFillSwap()
+  })
 })
 
-fillOrOtherDisplay.textContent = fillOrOther
+pointerButtons[0].checked = true
 
-document.getElementById("drawFillOther").addEventListener("click", () => {
-  drawFillOtherSwap()
-  fillOrOtherDisplay.textContent = fillOrOther
+const fillstyleButtons = document.querySelectorAll('input[name="fillstyle"]')
+
+fillstyleButtons.forEach(radio => {
+  radio.addEventListener('change', () => {
+    fillOrOther = document.querySelector('input[name="fillstyle"]:checked').value
+  })
 })
+
+fillstyleButtons[0].checked = true
 
 sliderValueDisplay2.textContent = 16
 
 slider2.addEventListener("input", (event) => {
-   	const sliderValue2 = event.target.value;
-   	sliderValueDisplay2.textContent = sliderValue2;
+   	const sliderValue2 = event.target.value
+   	sliderValueDisplay2.textContent = sliderValue2
 });
+
+rslider.value = 127
+gslider.value = 127
+bslider.value = 127
+rsliderValueDisplay.textContent = 127
+gsliderValueDisplay.textContent = 127
+bsliderValueDisplay.textContent = 127
+
+rslider.addEventListener("input", (event) => {
+  const sliderValue = event.target.value
+  rsliderValueDisplay.textContent = sliderValue
+  colorUpdate([rslider.value, gslider.value, bslider.value], false)
+})
+
+gslider.addEventListener("input", (event) => {
+  const sliderValue = event.target.value
+  gsliderValueDisplay.textContent = sliderValue
+  colorUpdate([rslider.value, gslider.value, bslider.value], false)
+})
+
+bslider.addEventListener("input", (event) => {
+  const sliderValue = event.target.value
+  bsliderValueDisplay.textContent = sliderValue
+  colorUpdate([rslider.value, gslider.value, bslider.value], false)
+})
 
 window.addEventListener("DOMContentLoaded", () => {
   const slider = document.getElementById("mySlider");
