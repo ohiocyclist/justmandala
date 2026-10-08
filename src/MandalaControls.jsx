@@ -1,13 +1,15 @@
 import React from 'react'
 import { Button, Form, Row, Col, ToggleButtonGroup, ToggleButton } from 'react-bootstrap'
 import { MandalaLib } from './mandalalibraries'
-import ColorChooser from './ColorChooser'
+import { ColorChooser } from './ColorChooser'
 import { autoFill } from './autoFill'
-import { randomDraw} from './draw'
+import { randomDraw} from './randomdraw'
+import { downloadMandala } from './downloadmandala'
 
-export function MandalaControls({slider1, handleSlider1Change, slider2, handleSlider2Change, slider3, handleSlider3Change, myLightDark, myPalette, setMyPalette, setCurrentColor,
-    toastId, resetCanvas, ctxRef, color, width, radioValue, handleRadioChange, handleMandalaFileInput, fileInputRef, handleUndo, canvasRef, undoRef, handleDrawFillChange, fillOption,
-    handleTesselate, downloadMandala}) {
+export function MandalaControls({slider1, handleSlider1Change, slider2, handleSlider2Change, slider3, handleSlider3Change, myLightDark, myPalette, 
+    setMyPalette, setCurrentColor, toastId, resetCanvas, ctxRef, color, width, radioValue, handleRadioChange, handleMandalaFileInput, fileInputRef, 
+    handleUndo, canvasRef, undoRef, handleDrawFillChange, fillOption, handleTesselate, drawOption, colors, setColorHelper, colorHelper, selectedColor, 
+    setSelectedColor}) {
     
     const randomDrawUndoWrapper = (width, slider1, slider2, ctxRef, color, canvasRef, undoRef) => {
       // make undo possible
@@ -54,7 +56,8 @@ export function MandalaControls({slider1, handleSlider1Change, slider2, handleSl
       </Col></Row><Row><Col className='text-center'>
     <h2>Click and drag to draw, switch button to fill</h2>
     <ColorChooser myLightDark={myLightDark} myPalette={myPalette} setMyPalette={setMyPalette} setCurrentColor={setCurrentColor} skipPalButton={true}
-      handleFileInput={(event) => {return MandalaLib.handleFileInput(event, toastId, myPalette, setMyPalette, myLightDark)}} />
+      handleFileInput={(event) => {return MandalaLib.handleFileInput(event, toastId, myPalette, setMyPalette, myLightDark)}} colors={colors}
+      colorHelper={colorHelper} setColorHelper={setColorHelper} selectedColor={selectedColor} setSelectedColor={setSelectedColor}/>
     </Col></Row><Row><Col className='text-center'>
       <div style={{display: 'inline-block'}}>
         <Button onClick={resetCanvas}>Reset Canvas</Button> 
@@ -96,7 +99,7 @@ export function MandalaControls({slider1, handleSlider1Change, slider2, handleSl
     </ToggleButtonGroup>
     </Col></Row>
     <Row><Col className='test-center' style={{marginTop: '20px'}}>
-    <ToggleButtonGroup type="radio" name="drawFill" defaultValue="draw" onChange={handleDrawFillChange}>
+    <ToggleButtonGroup type="radio" name="drawFill" defaultValue={drawOption} onChange={handleDrawFillChange}>
       <ToggleButton
         id="draw"
         value="draw"
@@ -108,6 +111,18 @@ export function MandalaControls({slider1, handleSlider1Change, slider2, handleSl
         value="fill"
         variant="outline-primary">
           Fill Mode
+        </ToggleButton>        
+      <ToggleButton
+        id="zoom"
+        value="zoom"
+        variant="outline-primary">
+          Zoom Mode
+        </ToggleButton>        
+      <ToggleButton
+        id="drop"
+        value="drop"
+        variant="outline-primary">
+          Color Picker Mode
         </ToggleButton>        
     </ToggleButtonGroup>
     </Col></Row>

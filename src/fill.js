@@ -1,6 +1,6 @@
 import { getMandalaHelpers } from './getlocalcoordinates.js'
 
-export default function fill(e, chartRef, ctxRef, color, width, slider1, radioValue) {
+export default function fill(e, chartRef, ctxRef, color, width, slider1, radioValue, isZoomRef, zoomCanvasRef, canvasRef, quxRef, quyRef) {
     var coord = getMandalaHelpers.getLocalCoordinates(e, chartRef)
     // fill on any condition that isn't simply wiggling the mouse
     if (e.buttons == 1 || e.type.includes("touch") || e.type.includes("click")) {
@@ -44,5 +44,15 @@ export default function fill(e, chartRef, ctxRef, color, width, slider1, radioVa
         }
       }
       ctx.putImageData(img, 0, 0)
+      // if we're zoomed in, copy back to the background tracking canvas
+      if (isZoomRef.current) {
+        let ctx = zoomCanvasRef.current.getContext("2d")
+        const hawidth = Math.floor(width / 2)
+        ctx.drawImage(
+            canvasRef.current, 
+            0, 0, width, width,
+            quxRef.current, quyRef.current, hawidth, hawidth
+        )
+      }
     }
   }

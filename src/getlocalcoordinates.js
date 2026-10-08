@@ -123,5 +123,10 @@ export class getMandalaHelpers {
       return result;
 
   }
+
+  static euclidDistance(x, y, w, z) {
+    // find the distance between x,y and w,z
+    return Math.sqrt(Math.pow((x - w), 2) + Math.pow((y - z), 2))
+  }
   
 }

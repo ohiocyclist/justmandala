@@ -4,12 +4,13 @@ import { useQueryParam, StringParam, withDefault, NumberParam } from 'use-query-
 import { Button, Container, Row, Col } from 'react-bootstrap'
 import "bootstrap/dist/css/bootstrap.min.css"
 import fill from './fill'
+import drop from './drop'
+import { zoom } from './zoom'
 import { draw, drawGrid } from './draw'
 import {createTessel} from './tessel'
 import { getMandalaHelpers } from './getlocalcoordinates'
 import Collapse from 'react-bootstrap/Collapse'
 import { MandalaControls } from './MandalaControls'
-import { downloadMandala } from './downloadmandala'
 import "./App.css"
 
 function JustMandala() {
@@ -19,16 +20,21 @@ function JustMandala() {
   const shrinkRef = useRef(null)
   const ctxRef = useRef(null)
   const topCtxRef = useRef(null)
+  const zoomRef = useRef(null)
+  const isZoomRef = useRef(false)
+  const zoomCanvasRef = useRef(false)
+  const quxRef = useRef(0)
+  const quyRef = useRef(0)
   // QueryParam set sliders.  Slider 1 is number of points.  Slider 2 is brushsize.  Slider 3 is color repeat
   const ClampedNumberParam = {
     encode: (value) => String(value),
     decode: (value) => {
       const n = Number(value);
-      if (isNaN(n)) return 17;
+      if (isNaN(n)) return 16;
       return Math.min(50, Math.max(2, n));
     }
   }
-  const slider1Default = withDefault(ClampedNumberParam, 17)
+  const slider1Default = withDefault(ClampedNumberParam, 16)
   const [symmetrySlider, setSymmetrySlider] = useQueryParam('Symmetry', slider1Default)
   const BrushClampedNumberParam = {
     encode: (value) => String(value),
@@ -43,9 +49,9 @@ function JustMandala() {
   const FillNumberParam = {
     encode: (value) => String(value),
     decode: (value) => {
-      const n = Number(value);
-      if (isNaN(n)) return 16;
-      return Math.min(25, Math.max(2, n));
+      const n = Number(value)
+      if (isNaN(n)) return 16
+      return Math.min(25, Math.max(2, n))
     }
   }
   const slider3Default = withDefault(FillNumberParam, 16)
@@ -64,7 +70,7 @@ function JustMandala() {
   const ClampedStringParam = {
     encode: (value) => String(value),
     decode: (value) => {
-      const n = String(value);
+      const n = String(value)
       if (n === 'fillAll') {return 'fillAll'}
       if (n === 'fillHalf') {return 'fillHalf'}
       if (n === 'fillOne') {return 'fillOne'}
@@ -84,6 +90,19 @@ function JustMandala() {
   const canvasRef = useRef(null)
   const lastUpdateRef = useRef(0)
   // toggle between drawing mode on click/touch and fill mode on click/touch.  Needed since touch can't CTRL-click.
+  // now adding color picker and zoom mode
+  const ClampedFillParam = {
+    encode: (value) => String(value),
+    decode: (value) => {
+      const n = String(value)
+      if (n === 'zoom') { return 'zoom'}
+      if (n === 'fill') { return 'fill'}
+      if (n === 'drop') { return 'drop'}
+      return 'draw'
+    }
+  }
+  const drawDefault = withDefault(ClampedFillParam, 'draw')
+  const [drawOption, setDrawOption] = useQueryParam('drawstyle', drawDefault)
   const drawFill = useRef('draw')
   // set the image size that best matches the target screen
   // run this once on startup.  Don't worry about resizes or rotations, let the user reload if they want
@@ -95,6 +114,35 @@ function JustMandala() {
     }})
 
   let color = currentColor
+  const colors = useRef([
+    "#68840D",
+    "#4BB329",
+    "#993030",
+    "#986209",
+    "#0D7052",
+    "#590D06",
+    "#5A4906",
+    "#668044",
+    "#C1A355",
+    "#C99605",
+    "#30BAB2",
+    "#1D3612",
+    "#36086A",
+    "#959F4B",
+    "#B3942C",
+    "#530102",
+    "#0233B9",
+    "#94C40D",
+    "#4D5C03",
+    "#90C1F9",
+    "#025001",
+    "#F6DE01",
+    "#72408F",
+    "#06B1E0",
+    "#1F1572"
+  ])
+  const [colorHelper, setColorHelper] = useState([...colors.current])  
+  const [selectedColor, setSelectedColor] = useState(0)
 
   const resetCanvas = () => {
     // initialize the canvas for drawing at startup.  Also redo the canvas if the user asks to clear it.
@@ -109,6 +157,15 @@ function JustMandala() {
     chartRef.current.style.position = 'relative'
     chartRef.current.appendChild(canvas)
     canvasRef.current = canvas
+    d3.select(zoomRef.current).selectAll("canvas").remove()
+    let zoomcanvas = document.createElement('canvas')
+    zoomcanvas.id = "zoomcanvas"
+    zoomcanvas.width = width
+    zoomcanvas.height = width
+    zoomcanvas.zIndex = 5
+    zoomRef.current.style.position = 'relative'
+    zoomRef.current.appendChild(zoomcanvas)
+    zoomCanvasRef.current = zoomcanvas
     ctx = canvas.getContext("2d")
     // put a white rectangle in the back so if the user saves the Mandala it won't be clear to dark mode back there
     ctx.fillStyle = 'white'
@@ -119,14 +176,23 @@ function JustMandala() {
       undoRef.current = canvas.toDataURL("image/png")
     }
     createGrid(symmetrySlider)
+    drawFill.current = drawOption
     if (drawFill.current === 'draw') {
       canvasRef.current.addEventListener('mousemove', () => {
         canvasRef.current.style.cursor = "url('pencil.png') 6 26, auto"
       })
-    } else {
-      drawFill.current = 'fill'
+    } else if (drawFill.current === 'fill') {
       canvasRef.current.addEventListener('mousemove', () => {
         canvasRef.current.style.cursor = "url('fill.png') 1 24, auto"
+      })
+    } else if (drawFill.current === 'zoom') {
+      canvasRef.current.addEventListener('mousemove', () => {
+        canvasRef.current.style.cursor = "url('zoom.png') 10 20, auto"
+      })
+    } else {
+      drawFill.current = 'drop'
+      canvas.addEventListener('mousemove', () => {
+        canvas.style.cursor = "url('dropper.png') 6 26, auto"
       })
     }
   }
@@ -238,9 +304,13 @@ function JustMandala() {
     }
     // always fill on ctrl-click.  Mouse users can ignore if they like the toggle and just click vs ctrl-click.
     if (event.ctrlKey || drawFill.current === 'fill') {
-      fill(event, chartRef, ctxRef, color, width, symmetrySlider, fillOption)
+      fill(event, chartRef, ctxRef, color, width, symmetrySlider, fillOption, isZoomRef, zoomCanvasRef, canvasRef, quxRef, quyRef)
+    } else if (drawFill.current === 'draw') {
+      draw(event, chartRef, ctxRef, width, symmetrySlider, brushSizeSlider, color, prevXY.current, isZoomRef, zoomCanvasRef, canvasRef, quxRef, quyRef)
+    } else if (drawFill.current === 'zoom') {
+      zoom(event, isZoomRef, canvasRef, zoomRef, zoomCanvasRef, width, quxRef, quyRef)
     } else {
-      draw(event, chartRef, ctxRef, width, symmetrySlider, brushSizeSlider, color, prevXY.current)
+      drop(event, chartRef, ctxRef.current, selectedColor, colors, setColorHelper, setCurrentColor, setMyPalette)
     }
   }
 
@@ -268,17 +338,26 @@ function JustMandala() {
   }
 
   const handleDrawFillChange = (event) => {
-    if (event === 'draw') {
-      drawFill.current = 'draw'
+    drawFill.current = event
+    if (drawFill.current === 'draw') {
       canvasRef.current.addEventListener('mousemove', () => {
         canvasRef.current.style.cursor = "url('pencil.png') 6 26, auto"
       })
-    } else {
-      drawFill.current = 'fill'
+    } else if (drawFill.current === 'fill') {
       canvasRef.current.addEventListener('mousemove', () => {
         canvasRef.current.style.cursor = "url('fill.png') 1 24, auto"
       })
+    } else if (drawFill.current === 'zoom') {
+      canvasRef.current.addEventListener('mousemove', () => {
+        canvasRef.current.style.cursor = "url('zoom.png') 10 20, auto"
+      })
+    } else {
+      drawFill.current = 'drop'
+      canvasRef.current.addEventListener('mousemove', () => {
+        canvasRef.current.style.cursor = "url('dropper.png') 6 26, auto"
+      })
     }
+    setDrawOption(drawFill.current)
   }
 
   // the controls are all pushed to a child library.  This is untidy in how many parameters need to be passed, but it shrinks the code here and allows for better
@@ -301,7 +380,8 @@ function JustMandala() {
         setCurrentColor={setCurrentColor} toastId={toastId} resetCanvas={resetCanvas} ctxRef={ctxRef} color={color} width={width}
         radioValue={fillOption} handleRadioChange={handleRadioChange} handleMandalaFileInput={handleMandalaFileInput} fileInputRef={fileInputRef}
         handleUndo={handleUndo} canvasRef={canvasRef} undoRef={undoRef} handleDrawFillChange={handleDrawFillChange} fillOption={fillOption} 
-        handleTesselate={createTesselWrap} downloadMandala={downloadMandala}
+        handleTesselate={createTesselWrap} drawOption={drawOption} colors={colors} setColorHelper={setColorHelper} colorHelper={colorHelper}
+        selectedColor={selectedColor} setSelectedColor={setSelectedColor}
       />
       </Col></Row>
       </div></Collapse>
@@ -319,6 +399,10 @@ function JustMandala() {
       ></div>
       <div
         ref={hideRef}
+        style={{width: '0px', height: '0px', display: 'none'}}
+      ></div>
+      <div
+        ref={zoomRef}
         style={{width: '0px', height: '0px', display: 'none'}}
       ></div>
     </Col>

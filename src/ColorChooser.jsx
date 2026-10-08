@@ -2,38 +2,16 @@ import React, { useRef, useState, useEffect } from 'react'
 import { Button, Row, Col, Form } from 'react-bootstrap'
 import { HexColorPicker } from 'react-colorful'
 
-function ColorChooser({ myPalette, setMyPalette, myLightDark, handleFileInput, setCurrentColor, skipPalButton}) {
+function resetPalette(colors, setMyPalette) {
+  let newvals = JSON.stringify(colors.current)
+  newvals = encodeURIComponent(newvals)
+  setMyPalette(newvals)
+}
 
-  const [selectedColor, setSelectedColor] = useState(0)
+export function ColorChooser({ myPalette, setMyPalette, myLightDark, handleFileInput, setCurrentColor, skipPalButton, colors, colorHelper, 
+  setColorHelper, selectedColor, setSelectedColor}) {
+
   const [borderColor, setBorderColor] = useState('white')
-  const colors = useRef([
-    "#68840D",
-    "#4BB329",
-    "#993030",
-    "#986209",
-    "#0D7052",
-    "#590D06",
-    "#5A4906",
-    "#668044",
-    "#C1A355",
-    "#C99605",
-    "#30BAB2",
-    "#1D3612",
-    "#36086A",
-    "#959F4B",
-    "#B3942C",
-    "#530102",
-    "#0233B9",
-    "#94C40D",
-    "#4D5C03",
-    "#90C1F9",
-    "#025001",
-    "#F6DE01",
-    "#72408F",
-    "#06B1E0",
-    "#1F1572"
-  ])
-  const [colorHelper, setColorHelper] = useState([...colors.current])  
 
   useEffect(() => {colors.current = [...colorHelper]}, [colorHelper])
 
@@ -44,7 +22,7 @@ function ColorChooser({ myPalette, setMyPalette, myLightDark, handleFileInput, s
       setCurrentColor(colors.current[idx])
     }
     if (skipPalButton) {
-      resetPalette()
+      resetPalette(colors, setMyPalette)
     }
   }
 
@@ -75,24 +53,6 @@ function ColorChooser({ myPalette, setMyPalette, myLightDark, handleFileInput, s
     }
   }, [myPalette])
 
-  const updateColor = (index, newColor) => {
-    // need to update the useRef to avoid a race condition
-    colors.current = colors.current.map((color, i) => (i === index ? newColor : color))
-    setColorHelper(colors.current)
-    if (setCurrentColor) {
-      setCurrentColor(newColor)
-    }
-    if (skipPalButton) {
-      resetPalette()
-    }
-  }
-
-  const resetPalette = () => {
-    let newvals = JSON.stringify(colors.current)
-    newvals = encodeURIComponent(newvals)
-    setMyPalette(newvals)
-  }
-
   useEffect( () => {
     if (myLightDark === 0) {
       setBorderColor('lime')
@@ -106,7 +66,7 @@ function ColorChooser({ myPalette, setMyPalette, myLightDark, handleFileInput, s
     // if myPalette is set to nothing, some things could interpret that as all black
     // always make sure myPalette is set to something (this will ding the URL)
     if (!myPalette) {
-      resetPalette()
+      resetPalette(colors, setMyPalette)
     }
     if (setCurrentColor) {
       setCurrentColor(colors.current[0])
@@ -122,7 +82,7 @@ function ColorChooser({ myPalette, setMyPalette, myLightDark, handleFileInput, s
               data-testid="color-picker"
               style={{height: '200px', width: '200px'}}
               color={colorHelper[selectedColor]}
-              onChange={(newColor) => updateColor(selectedColor, newColor)}
+              onChange={(newColor) => updateColor(selectedColor, newColor, colors, setColorHelper, setCurrentColor, skipPalButton, setMyPalette)}
             />
             <div key={`swatch-selector`} style={{backgroundColor: colorHelper[selectedColor], height: "40px", width: "200px", marginBottom: "10px"}} >  </div>
           </div>
@@ -138,7 +98,7 @@ function ColorChooser({ myPalette, setMyPalette, myLightDark, handleFileInput, s
         </Row>
       </Col>
     </Row>
-    {!skipPalButton && <Button onClick={resetPalette}>Update Palette</Button>  }
+    {!skipPalButton && <Button onClick={resetPalette(colors, setMyPalette)}>Update Palette</Button>  }
     <Row className="justify-content-center">
       <Form.Label htmlFor="file-input"><h3>Choose Colors from a file:</h3></Form.Label>
       <div style={{ textAlign: 'center', width: '80%'}} >
@@ -149,4 +109,14 @@ function ColorChooser({ myPalette, setMyPalette, myLightDark, handleFileInput, s
   </>
 }
 
-export default ColorChooser;
+export function updateColor (index, newColor, colors, setColorHelper, setCurrentColor, skipPalButton, setMyPalette) {
+  // need to update the useRef to avoid a race condition
+  colors.current = colors.current.map((color, i) => (i === index ? newColor : color))
+  setColorHelper(colors.current)
+  if (setCurrentColor) {
+    setCurrentColor(newColor)
+  }
+  if (skipPalButton) {
+    resetPalette(colors, setMyPalette)
+  }
+}
