@@ -81,16 +81,19 @@ export class getMandalaHelpers {
       const stack = new Int32Array(width * height * 2)
       let sp = 0
 
+      startX = Math.floor(startX)
+      startY = Math.floor(startY)
+
       stack[sp++] = startX
       stack[sp++] = startY
 
       const visited = new Uint8Array(width * height)
       const result = []
 
-      let i = (startY * width + startX) * 4
-      let curColorR = data[i]
-      let curColorG = data[i + 1]
-      let curColorB = data[i + 2]
+      let si = (startY * width + startX) * 4
+      let curColorR = data[si]
+      let curColorG = data[si + 1]
+      let curColorB = data[si + 2]
 
       while (sp > 0) {
         const y = stack[--sp]

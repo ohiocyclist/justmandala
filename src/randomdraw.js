@@ -12,7 +12,7 @@ function drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, 
   // kite style random mandala does not use extraMirror but uses radial symmetry
   let extraMirror = false
   let nosym = false
-  drawLine(xCenter - curx, xCenter - cury, xCenter - endx, xCenter - endy, ctxRef, width, slider1, slider2, color, nosym, extraMirror)
+  drawLine(xCenter - curx, xCenter - cury, xCenter - endx, xCenter - endy, ctxRef.current, width, slider1, slider2, color, nosym, extraMirror)
 }
 
 function voronoiTrace(pointList, ctxRef, width, slider1, slider2, color) {
@@ -51,7 +51,7 @@ function voronoiTrace(pointList, ctxRef, width, slider1, slider2, color) {
                   }
                 
                   // (x1, y1, x2, y2, ctxRef, width, slider1, slider2, color, nosym=false, extraMirror=true)
-                  drawLine(i, j, previ, prevj, ctxRef, width, slider1, slider2, color)
+                  drawLine(i, j, previ, prevj, ctxRef.current, width, slider1, slider2, color)
                   previ = i
                   prevj = j
                   tubreak = true
@@ -113,7 +113,7 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
                             Math.sin(angle) * figscale + xCenter + i + j * figscale * 2 + jittersize]
               // circular keep-out
               if (getMandalaHelpers.euclidDistance(thislocs[0], thislocs[1], xCenter, xCenter) < xCenter && lastlocs[0] != 0) {
-                drawLine(lastlocs[0], lastlocs[1], thislocs[0], thislocs[1], ctxRef, width, slider1, slider2, color)
+                drawLine(lastlocs[0], lastlocs[1], thislocs[0], thislocs[1], ctxRef.current, width, slider1, slider2, color)
               }
               lastlocs = thislocs
             }
@@ -319,7 +319,7 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
             let pi = Math.PI
             let curendx = startx + step * Math.cos(pi * j / stepup)
             let curendy = starty - step * Math.sin(pi * j / stepup)
-            drawLine(curx, cury, curendx, curendy, ctxRef, width, slider1, slider2, color)
+            drawLine(curx, cury, curendx, curendy, ctxRef.current, width, slider1, slider2, color)
             curx = curendx
             cury = curendy
           }
@@ -339,13 +339,13 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
           let startx = xCenter - (i + splayfactor) * (xCenter / stepfraction)
           let endx = xCenter + (i + splayfactor) * (xCenter / stepfraction)
           let yloc = xCenter - (i + 1) * (xCenter / stepfraction)
-          drawLine(startx, yloc, endx, yloc, ctxRef, width, slider1, slider2, color)
+          drawLine(startx, yloc, endx, yloc, ctxRef.current, width, slider1, slider2, color)
         }
       } else if (randNum < 0.75) {
         // just a bunch of straight lines style
         ctx.strokeStyle = color
         let offset = 40 * Math.random()
-        drawLine(offset, xCenter - offset, xCenter, xCenter - offset, ctxRef, width, slider1, slider2, color)
+        drawLine(offset, xCenter - offset, xCenter, xCenter - offset, ctxRef.current, width, slider1, slider2, color)
         for (let i = 0; i < 4; i++) {
           let usei = i
           // add another inner layer between 0 and 1
@@ -358,7 +358,7 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
           if (i === 2) {
               starty = startx
           }
-          drawLine(startx, starty, startx + offset, Math.abs(width - starty), ctxRef, width, slider1, slider2, color)
+          drawLine(startx, starty, startx + offset, Math.abs(width - starty), ctxRef.current, width, slider1, slider2, color)
         }
       } else if (randNum < 0.875) {
         // interlocking crossing lines style
@@ -390,7 +390,7 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
           if (endy > width - edgekeep) {
             endy = width - edgekeep
           }
-          drawLine(startx, starty, endx, endy, ctxRef, width, slider1, slider2, color)
+          drawLine(startx, starty, endx, endy, ctxRef.current, width, slider1, slider2, color)
         }
       } else {
         // push from the edge to the center style
@@ -426,7 +426,7 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
             xLocn = xCenter
           }
           ctx.strokeStyle = color
-          drawLine(currentStart[0], currentStart[1], xLocn, yLocn, ctxRef, width, slider1, slider2, color)
+          drawLine(currentStart[0], currentStart[1], xLocn, yLocn, ctxRef.current, width, slider1, slider2, color)
           currentStart = [xLocn, yLocn]
         }
       }

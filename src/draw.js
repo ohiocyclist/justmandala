@@ -1,18 +1,25 @@
 import { getMandalaHelpers } from './getlocalcoordinates'
 
 // draw the thin gray lines that make the grid
-export function drawGrid(ctxRef, width, slider1) {
+export function drawGrid(ctx, width, slider1, isZoomRef, quxRef, quyRef) {
   let getGrid = true
   let nosym = true
   let lineWidth = 1
   let gridLines = getMandalaHelpers.getSymmetryPoints(0, 0, width, slider1, true, getGrid)
+  let offsetx = 0
+  let offsety = 0
+  if (isZoomRef.current) {
+    offsetx = Math.floor(width / 2) - quxRef.current * 2
+    offsety = Math.floor(width / 2) - quyRef.current * 2
+  }
   for (let i = 0; i < gridLines.length; i++) {
     // (gridLines[i][0] - width / 2) / 100 leaves a small open area at the center for better visibility
-    drawLine(width / 2 + (gridLines[i][0] - width / 2) / 100, width / 2 + (gridLines[i][1] - width / 2) / 100, gridLines[i][0], gridLines[i][1], ctxRef, width, slider1, lineWidth, 'gray', nosym)
+    drawLine(width / 2 + (gridLines[i][0] - width / 2) / 100 + offsetx, width / 2 + (gridLines[i][1] - width / 2) / 100 + offsety,
+      gridLines[i][0] + offsetx, gridLines[i][1] + offsety, ctx, width, slider1, lineWidth, 'gray', nosym)
   }
 }
 
-export function drawLine(x1, y1, x2, y2, ctxRef, width, slider1, slider2, color, nosym=false, extraMirror=true) {
+export function drawLine(x1, y1, x2, y2, ctx, width, slider1, slider2, color, nosym=false, extraMirror=true) {
 
     // draw a line from x1, y1 to x2, y2 and all symmetrical points radial and mirror (unless nosym is true) (and extraMirror false turns of the mirror symmetry)
 
@@ -25,7 +32,6 @@ export function drawLine(x1, y1, x2, y2, ctxRef, width, slider1, slider2, color,
       endPoints = [[x2, y2]]
     }
 
-    let ctx = ctxRef.current
     for (var i = 0; i < startPoints.length; i++) {
       ctx.beginPath()
       ctx.imageSmoothingEnabled = false
@@ -49,6 +55,11 @@ export function draw(e, chartRef, ctxRef, width, slider1, slider2, color, prevXY
     var y = coord[1]
 
     let ctx = ctxRef.current
+    if (isZoomRef.current) {
+      x = Math.round(x / 2) + quxRef.current
+      y = Math.round(y / 2) + quyRef.current
+      ctx = zoomCanvasRef.current.getContext("2d")
+    }
     if (ctx) {
       ctx.strokeStyle = color
       ctx.lineWidth = Number(slider2)
@@ -56,29 +67,29 @@ export function draw(e, chartRef, ctxRef, width, slider1, slider2, color, prevXY
       let anyDraw = false
       if (e.buttons == 1) {
         // continue a mouse move
-        drawLine(prevXY[0], prevXY[1], x, y, ctxRef, width, slider1, slider2, color)
+        drawLine(prevXY[0], prevXY[1], x, y, ctx, width, slider1, slider2, color)
         anyDraw = true
       } else if (e.type == "click" || e.type == "touchstart") {
         // this is the start of a line series so we reset previous here
         prevXY[0] = x
         prevXY[1] = y
-        drawLine(prevXY[0], prevXY[1], x, y, ctxRef, width, slider1, slider2, color)
+        drawLine(prevXY[0], prevXY[1], x, y, ctx, width, slider1, slider2, color)
         anyDraw = true
       } else if (e.type == "touchmove" || e.type.includes("touch")) {
         // continue a touch move
-        drawLine(prevXY[0], prevXY[1], x, y, ctxRef, width, slider1, slider2, color)
+        drawLine(prevXY[0], prevXY[1], x, y, ctx, width, slider1, slider2, color)
         anyDraw = true
       }
       // connect the next segment to the current one
       prevXY[0] = x
       prevXY[1] = y
       if (anyDraw && isZoomRef.current) {
-        let ctx = zoomCanvasRef.current.getContext("2d")
+        // let ctx = zoomCanvasRef.current.getContext("2d")
         const hawidth = Math.floor(width / 2)
-        ctx.drawImage(
-            canvasRef.current, 
-            0, 0, width, width,
-            quxRef.current, quyRef.current, hawidth, hawidth
+        ctxRef.current.drawImage(
+            zoomCanvasRef.current, 
+            quxRef.current, quyRef.current, hawidth, hawidth,
+            0, 0, width, width
         )
       }
     }

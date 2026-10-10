@@ -1,15 +1,26 @@
 import { getMandalaHelpers } from './getlocalcoordinates.js'
 
-export default function fill(e, chartRef, ctxRef, color, width, slider1, radioValue, isZoomRef, zoomCanvasRef, canvasRef, quxRef, quyRef) {
-    var coord = getMandalaHelpers.getLocalCoordinates(e, chartRef)
+export default function fill(e, x, y, ctx, color, width, slider1, radioValue) {
+    let symmetricPoints = []
     // fill on any condition that isn't simply wiggling the mouse
     if (e.buttons == 1 || e.type.includes("touch") || e.type.includes("click")) {
-      var x = Math.floor(coord[0])
-      var y = Math.floor(coord[1])
-      let symmetricPoints = getMandalaHelpers.getSymmetryPoints(x, y, width, slider1)
-      const ctx = ctxRef.current
       const img = ctx.getImageData(0, 0, width, width)
       const data = img.data
+      let allcoords = getMandalaHelpers.getAdjacentWhite(data, x, y, width, width, radioValue)
+      const pimg = ctx.getImageData(x, y, 1, 1)
+      const da = pimg.data    
+      const refr = da[0]
+      const refg = da[1]
+      const refb = da[2]      
+      // help target small areas
+      if (allcoords.length < 1000) {
+        for (let i = 0; i < allcoords.length; i += 4) {
+          let thispoints = getMandalaHelpers.getSymmetryPoints(allcoords[i][0], allcoords[i][1], width, slider1)
+          symmetricPoints = [...symmetricPoints, ...thispoints]
+        }
+      } else {
+        symmetricPoints = getMandalaHelpers.getSymmetryPoints(x, y, width, slider1)
+      }
       let usecolor = getMandalaHelpers.hexToRgb(color)
       let idx = 0
       for (const [prex, prey] of symmetricPoints) {
@@ -44,15 +55,5 @@ export default function fill(e, chartRef, ctxRef, color, width, slider1, radioVa
         }
       }
       ctx.putImageData(img, 0, 0)
-      // if we're zoomed in, copy back to the background tracking canvas
-      if (isZoomRef.current) {
-        let ctx = zoomCanvasRef.current.getContext("2d")
-        const hawidth = Math.floor(width / 2)
-        ctx.drawImage(
-            canvasRef.current, 
-            0, 0, width, width,
-            quxRef.current, quyRef.current, hawidth, hawidth
-        )
-      }
     }
   }

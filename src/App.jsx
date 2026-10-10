@@ -3,23 +3,22 @@ import * as d3 from "d3"
 import { useQueryParam, StringParam, withDefault, NumberParam } from 'use-query-params'
 import { Button, Container, Row, Col } from 'react-bootstrap'
 import "bootstrap/dist/css/bootstrap.min.css"
-import fill from './fill'
 import drop from './drop'
-import { zoom } from './zoom'
-import { draw, drawGrid } from './draw'
+import { zoom, fillWrap } from './zoom'
+import { draw } from './draw'
 import {createTessel} from './tessel'
 import { getMandalaHelpers } from './getlocalcoordinates'
 import Collapse from 'react-bootstrap/Collapse'
 import { MandalaControls } from './MandalaControls'
+import { createGrid } from './creategrid'
 import "./App.css"
 
 function JustMandala() {
-  // refs for the drawings.  topCtxRef holds the gridlines, on top of and transparent to the drawing
+  // refs for the drawings.
   const chartRef = useRef(null)
   const hideRef = useRef(null)
   const shrinkRef = useRef(null)
   const ctxRef = useRef(null)
-  const topCtxRef = useRef(null)
   const zoomRef = useRef(null)
   const isZoomRef = useRef(false)
   const zoomCanvasRef = useRef(false)
@@ -146,6 +145,7 @@ function JustMandala() {
 
   const resetCanvas = () => {
     // initialize the canvas for drawing at startup.  Also redo the canvas if the user asks to clear it.
+    isZoomRef.current = false
     let ctx
     d3.select(chartRef.current).selectAll("canvas").remove()
     let canvas = document.createElement('canvas')
@@ -175,7 +175,7 @@ function JustMandala() {
     if (!undoRef.current) {
       undoRef.current = canvas.toDataURL("image/png")
     }
-    createGrid(symmetrySlider)
+    createGrid(chartRef, symmetrySlider, width, isZoomRef, quxRef, quyRef)
     drawFill.current = drawOption
     if (drawFill.current === 'draw') {
       canvasRef.current.addEventListener('mousemove', () => {
@@ -197,38 +197,20 @@ function JustMandala() {
     }
   }
 
-  const createGrid = (value) => {
-    // allow resetting the grid when changing the symmetry slider to reflect the new symmetry
-    // place a canvas atop the other canvas so we can deal independently with the grid and not save it
-    let topcanvas = document.createElement('canvas')
-    topcanvas.id = "gridcanvas"
-    topcanvas.width = width
-    topcanvas.height = width
-    topcanvas.style.position = 'absolute'
-    topcanvas.style.top = '0'
-    topcanvas.style.left = '0'
-    topcanvas.style.zIndex = '10'
-    topcanvas.style.pointerEvents = 'none'
-
-    chartRef.current.appendChild(topcanvas)
-    let topCtx = topcanvas.getContext("2d")
-    topCtxRef.current = topCtx
-    // react doesn't keep up with the slider1 value for here, we need to keep up for ourselves
-    drawGrid(topCtxRef, width, value)
-  }
-
   const createTesselWrap = () => {
     createTessel(d3, hideRef, shrinkRef, width)
   }
 
   const handleUndo = () => {
     // undo button pressed.  Revert to the item in the buffer.
-    ctxRef.current.clearRect(0, 0, width, width)
-    const img = new Image()
-    img.src = undoRef.current
-    img.onload = () => {
-      ctxRef.current.drawImage(img, 0, 0, width, width)    
-    }      
+    if (!isZoomRef.current) {
+      ctxRef.current.clearRect(0, 0, width, width)
+      const img = new Image()
+      img.src = undoRef.current
+      img.onload = () => {
+        ctxRef.current.drawImage(img, 0, 0, width, width)    
+      }      
+    }
   }
 
   const handleRadioChange = (event) => {
@@ -242,7 +224,7 @@ function JustMandala() {
     // but do update the grid
     d3.select(chartRef.current).select('#gridcanvas').remove()
     setSymmetrySlider(value)
-    createGrid(value)
+    createGrid(chartRef, value, width, isZoomRef, quxRef, quyRef)
   }
 
   // these are simple setter handle functions
@@ -297,18 +279,19 @@ function JustMandala() {
     // and there's no redo function right now.
     if (event.buttons === 1 || event.type.includes("touch") || event.type.includes('click')) {
       const now = Date.now()
-      if (lastUpdateRef.current === 0 || now - lastUpdateRef.current > 4000) {
+      if ((lastUpdateRef.current === 0 || now - lastUpdateRef.current > 4000) && !isZoomRef.current) {
         undoRef.current = canvasRef.current.toDataURL("image/png")    
         lastUpdateRef.current = now
       }
     }
     // always fill on ctrl-click.  Mouse users can ignore if they like the toggle and just click vs ctrl-click.
     if (event.ctrlKey || drawFill.current === 'fill') {
-      fill(event, chartRef, ctxRef, color, width, symmetrySlider, fillOption, isZoomRef, zoomCanvasRef, canvasRef, quxRef, quyRef)
+      // wrapper is to allow zooming
+      fillWrap(event, chartRef, ctxRef, color, width, symmetrySlider, fillOption, isZoomRef, zoomCanvasRef, quxRef, quyRef)
     } else if (drawFill.current === 'draw') {
       draw(event, chartRef, ctxRef, width, symmetrySlider, brushSizeSlider, color, prevXY.current, isZoomRef, zoomCanvasRef, canvasRef, quxRef, quyRef)
     } else if (drawFill.current === 'zoom') {
-      zoom(event, isZoomRef, canvasRef, zoomRef, zoomCanvasRef, width, quxRef, quyRef)
+      zoom(event, isZoomRef, canvasRef, chartRef, zoomCanvasRef, width, quxRef, quyRef, symmetrySlider)
     } else {
       drop(event, chartRef, ctxRef.current, selectedColor, colors, setColorHelper, setCurrentColor, setMyPalette)
     }
@@ -381,7 +364,7 @@ function JustMandala() {
         radioValue={fillOption} handleRadioChange={handleRadioChange} handleMandalaFileInput={handleMandalaFileInput} fileInputRef={fileInputRef}
         handleUndo={handleUndo} canvasRef={canvasRef} undoRef={undoRef} handleDrawFillChange={handleDrawFillChange} fillOption={fillOption} 
         handleTesselate={createTesselWrap} drawOption={drawOption} colors={colors} setColorHelper={setColorHelper} colorHelper={colorHelper}
-        selectedColor={selectedColor} setSelectedColor={setSelectedColor}
+        selectedColor={selectedColor} setSelectedColor={setSelectedColor} isZoomRef={isZoomRef}
       />
       </Col></Row>
       </div></Collapse>

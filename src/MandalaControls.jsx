@@ -9,17 +9,21 @@ import { downloadMandala } from './downloadmandala'
 export function MandalaControls({slider1, handleSlider1Change, slider2, handleSlider2Change, slider3, handleSlider3Change, myLightDark, myPalette, 
     setMyPalette, setCurrentColor, toastId, resetCanvas, ctxRef, color, width, radioValue, handleRadioChange, handleMandalaFileInput, fileInputRef, 
     handleUndo, canvasRef, undoRef, handleDrawFillChange, fillOption, handleTesselate, drawOption, colors, setColorHelper, colorHelper, selectedColor, 
-    setSelectedColor}) {
+    setSelectedColor, isZoomRef}) {
     
-    const randomDrawUndoWrapper = (width, slider1, slider2, ctxRef, color, canvasRef, undoRef) => {
+    const randomDrawUndoWrapper = (width, slider1, slider2, ctxRef, color, canvasRef, undoRef, isZoomRef) => {
       // make undo possible
-      undoRef.current = canvasRef.current.toDataURL("image/png")      
+      if (!isZoomRef.current) {
+        undoRef.current = canvasRef.current.toDataURL("image/png")      
+      }
       randomDraw(width, slider1, slider2, ctxRef, color)
     }
 
-    const autoFillUndoWrapper = (ctxRef, width, myPalette, slider1, slider3, radioValue, canvasRef, undoRef) => {
+    const autoFillUndoWrapper = (ctxRef, width, myPalette, slider1, slider3, radioValue, canvasRef, undoRef, isZoomRef) => {
       // make undo possible
-      undoRef.current = canvasRef.current.toDataURL("image/png")      
+      if (!isZoomRef.current) {
+        undoRef.current = canvasRef.current.toDataURL("image/png")      
+      }
       autoFill.autoFill(ctxRef, width, myPalette, slider1, slider3, radioValue)
     }
     
@@ -63,10 +67,10 @@ export function MandalaControls({slider1, handleSlider1Change, slider2, handleSl
         <Button onClick={resetCanvas}>Reset Canvas</Button> 
       </div>
       <div style={{display: 'inline-block', marginLeft: '20px'}}>
-        <Button onClick={() => {randomDrawUndoWrapper(width, slider1, slider2, ctxRef, color, canvasRef, undoRef)}}>Random Mandala</Button>
+        <Button onClick={() => {randomDrawUndoWrapper(width, slider1, slider2, ctxRef, color, canvasRef, undoRef, isZoomRef)}}>Random Mandala</Button>
       </div>
       <div style={{display: 'inline-block', marginLeft: '20px'}}>
-        <Button onClick={() => {autoFillUndoWrapper(ctxRef, width, myPalette, slider1, slider3, radioValue, canvasRef, undoRef)}}>Automatically Fill Areas</Button>
+        <Button onClick={() => {autoFillUndoWrapper(ctxRef, width, myPalette, slider1, slider3, radioValue, canvasRef, undoRef, isZoomRef)}}>Automatically Fill Areas</Button>
       </div>
       <div style={{display: 'inline-block', marginLeft: '20px'}}>
         <Button onClick={() => {handleTesselate()}}>Tesselate</Button>
@@ -125,6 +129,7 @@ export function MandalaControls({slider1, handleSlider1Change, slider2, handleSl
           Color Picker Mode
         </ToggleButton>        
     </ToggleButtonGroup>
+    <p><font color="#ffffff">First zoom zooms in, second zooms back out.  Undo is not available while zoomed in, but can undo what was done while zoomed in when zoomed back out.</font></p>
     </Col></Row>
     <Row><Col className='text-center'>
     <Form.Label htmlFor="file-input"><h3>Reload a saved PNG Mandala:</h3></Form.Label>
