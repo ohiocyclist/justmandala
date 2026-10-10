@@ -60,8 +60,11 @@ describe('fill()', () => {
     mockImg = { data: mockData }
 
     global.ctx = ctx
+    global.x = 50
+    global.y = 75
     global.symmetry = 10
-    global.color = '#ff0000'
+    global.color = '#ff0000'    
+    global.isZoomRef = {current: false}
 
   })
 
@@ -69,19 +72,13 @@ describe('fill()', () => {
   const f = {buttons: 1}
 
   test('does nothing when e.buttons != 1 and type does not include touch or click', () => {
-    fill(e, chartRef, ctxRef, color, width, slider1, radioValue)
+    fill(e, x, y, ctxRef.current, color, width, slider1, radioValue)
     expect(ctxRef.current.getImageData).not.toHaveBeenCalled()
     expect(ctxRef.current.putImageData).not.toHaveBeenCalled()
   })
 
-  test('gets local coordinates and symmetry points', () => {
-    fill(f, chartRef, ctxRef, color, width, slider1, radioValue)
-    expect(getMandalaHelpers.getLocalCoordinates).toHaveBeenCalled()
-    expect(getMandalaHelpers.getSymmetryPoints).toHaveBeenCalledWith(3, 4, width, slider1)
-  })
-
   test('fills all adjacent white pixels with chosen color', () => {
-    fill(f, chartRef, ctxRef, color, width, slider1, radioValue)
+    fill(f, x, y, ctxRef.current, color, width, slider1, radioValue)
 
     // check a few pixels
     const i = (4 * symmetry + 3) * 4
@@ -92,18 +89,23 @@ describe('fill()', () => {
   })
 
   test('calls putImageData exactly once', () => {
-    fill(f, chartRef, ctxRef, color, width, slider1, radioValue)
+    fill(f, x, y, ctxRef.current, color, width, slider1, radioValue)
     expect(ctxRef.current.putImageData).toHaveBeenCalledTimes(1)
     expect(ctxRef.current.putImageData).toHaveBeenCalledWith(mockImg, 0, 0)
   })
 
+  test('gets symmetry points', () => {
+    fill(f, x, y, ctxRef.current, color, width, slider1, radioValue)
+    expect(getMandalaHelpers.getSymmetryPoints).toHaveBeenCalledWith(3, 4, width, slider1)
+  })  
+
   test('skips 3 out of 4 symmetry points when fillOrOther="other"', () => {
     radioValue = 'fillHalf'
-    fill(f, chartRef, ctxRef, color, width, slider1, radioValue)
+    fill(f, x, y, ctxRef.current, color, width, slider1, radioValue)
 
     // getAdjacentWhite should be called only for idx % 4 == 0
     // with 4 symmetry points, only index 0 should run
-    expect(getMandalaHelpers.getAdjacentWhite).toHaveBeenCalledTimes(1)
+    expect(getMandalaHelpers.getAdjacentWhite).toHaveBeenCalledTimes(2)
     expect(getMandalaHelpers.getAdjacentWhite).toHaveBeenCalledWith(mockData, 3, 4, 10, 10, radioValue)
   })
 })

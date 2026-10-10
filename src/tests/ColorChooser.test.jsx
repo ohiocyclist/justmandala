@@ -14,7 +14,7 @@ jest.mock('react-colorful', () => {
 });
 
 import { render, screen, fireEvent } from '@testing-library/react'
-import ColorChooser from '../ColorChooser'
+import { ColorChooser } from '../ColorChooser'
 
 describe('ColorChooser', () => {
   const mockSetMyPalette = jest.fn()
@@ -28,7 +28,64 @@ describe('ColorChooser', () => {
     myLightDark: 1,
     handleFileInput: mockHandleFileInput,
     setCurrentColor: mockSetCurrentColor,
-    skipPalButton: false
+    skipPalButton: false,
+    colors: {current: [
+      "#68840D",
+      "#4BB329",
+      "#993030",
+      "#986209",
+      "#0D7052",
+      "#590D06",
+      "#5A4906",
+      "#668044",
+      "#C1A355",
+      "#C99605",
+      "#30BAB2",
+      "#1D3612",
+      "#36086A",
+      "#959F4B",
+      "#B3942C",
+      "#530102",
+      "#0233B9",
+      "#94C40D",
+      "#4D5C03",
+      "#90C1F9",
+      "#025001",
+      "#F6DE01",
+      "#72408F",
+      "#06B1E0",
+      "#1F1572"
+    ]},
+    colorHelper: [
+      "#68840D",
+      "#4BB329",
+      "#993030",
+      "#986209",
+      "#0D7052",
+      "#590D06",
+      "#5A4906",
+      "#668044",
+      "#C1A355",
+      "#C99605",
+      "#30BAB2",
+      "#1D3612",
+      "#36086A",
+      "#959F4B",
+      "#B3942C",
+      "#530102",
+      "#0233B9",
+      "#94C40D",
+      "#4D5C03",
+      "#90C1F9",
+      "#025001",
+      "#F6DE01",
+      "#72408F",
+      "#06B1E0",
+      "#1F1572"
+    ], 
+    setColorHelper: jest.fn(),
+    selectedColor: 0,
+    setSelectedColor: jest.fn()
   }
 
   beforeEach(() => {
@@ -86,7 +143,7 @@ describe('ColorChooser', () => {
 
     rerender(<ColorChooser {...defaultProps} myLightDark={0} />)
 
-    // The first color button is selected by default (index 0) 
+    // The first color button is selected by default (index 0)   
     const selectedButton = screen.getAllByRole('button')[0]
     expect(selectedButton).toHaveStyle('border: 6px solid lime')
   })

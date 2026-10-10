@@ -2,11 +2,9 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MandalaControls } from '../MandalaControls';
 
-jest.mock('../draw', () => ({
+jest.mock('../randomdraw', () => ({
   randomDraw: jest.fn(),
 }));
-
-//jest.mock('../autoFill', () => jest.fn());
 
 jest.mock('../mandalalibraries', () => ({
   MandalaLib: {
@@ -14,9 +12,13 @@ jest.mock('../mandalalibraries', () => ({
   },
 }));
 
-jest.mock('../ColorChooser', () => () => <div data-testid="color-chooser" />);
+jest.mock('../ColorChooser', () => ({
+  __esModule: true,
+  ColorChooser: (props) => <div data-testid="color-chooser" />
+}));
 
-import { randomDraw } from '../draw';
+
+import { randomDraw } from '../randomdraw';
 import { autoFill } from '../autoFill';
 import { MandalaLib } from '../mandalalibraries';
 
@@ -40,7 +42,17 @@ describe('MandalaControls', () => {
     radioValue: 'fillAll',
     handleRadioChange: jest.fn(),
     undoRef: {current: {}},
-    canvasRef: {current: {toDataURL: jest.fn()}}
+    canvasRef: {current: {toDataURL: jest.fn()}},
+    handleDrawFillChange: jest.fn(), 
+    fillOption: 'fillAll', 
+    handleTesselate: jest.fn(), 
+    drawOption: 'draw',
+    colors: ['#ffffff', '#000000'], 
+    setColorHelper: jest.fn(),
+    colorHelper: '#ffffff',
+    selectedColor: 0,
+    setSelectedColor: jest.fn(),
+    isZoomRef: {current: false}
   };
 
   it('renders all sliders and labels', () => {

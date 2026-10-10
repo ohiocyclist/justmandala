@@ -1,4 +1,4 @@
-import { drawLine, draw, randomDraw } from '../draw';
+import { drawLine, draw } from '../draw';
 import { getMandalaHelpers } from '../getlocalcoordinates';
 
 jest.mock('../getlocalcoordinates', () => {
@@ -24,20 +24,20 @@ function mockCtx() {
     strokeStyle: '',
     lineCap: '',
     imageSmoothingEnabled: false,
+    drawImage: jest.fn()
   };
 }
 
 describe('drawLine', () => {
   it('draws a line for each symmetry point', () => {
     const ctx = mockCtx();
-    const ctxRef = { current: ctx };
 
     getMandalaHelpers.getSymmetryPoints.mockReturnValue([
       [10, 20],
       [30, 40],
     ]);
 
-    drawLine(0, 0, 100, 100, ctxRef, 200, 4, 2, 'red');
+    drawLine(0, 0, 100, 100, ctx, 200, 4, 2, 'red');
 
     expect(getMandalaHelpers.getSymmetryPoints).toHaveBeenCalledTimes(2);
     expect(ctx.beginPath).toHaveBeenCalledTimes(2);
@@ -51,6 +51,7 @@ describe('draw', () => {
   it('calls drawLine when mouse is down', () => {
     const ctx = mockCtx();
     const ctxRef = { current: ctx };
+    const isZoonRef = { current: false };
 
     getMandalaHelpers.getLocalCoordinates.mockReturnValue([50, 60]);
     getMandalaHelpers.getSymmetryPoints.mockReturnValue([[50, 60]]);
@@ -58,7 +59,7 @@ describe('draw', () => {
     const prevXY = [10, 20];
     const event = { buttons: 1 };
 
-    draw(event, {}, ctxRef, 200, 4, 2, 'blue', prevXY);
+    draw(event, {}, ctxRef, 200, 4, 2, 'blue', prevXY, isZoonRef);
 
     expect(getMandalaHelpers.getLocalCoordinates).toHaveBeenCalled();
     expect(ctx.beginPath).toHaveBeenCalled();
@@ -69,6 +70,7 @@ describe('draw', () => {
   it('updates prevXY on click', () => {
     const ctx = mockCtx();
     const ctxRef = { current: ctx };
+    const isZoonRef = { current: false };
 
     getMandalaHelpers.getLocalCoordinates.mockReturnValue([80, 90]);
     getMandalaHelpers.getSymmetryPoints.mockReturnValue([[80, 90]]);
@@ -76,26 +78,29 @@ describe('draw', () => {
     const prevXY = [0, 0];
     const event = { type: 'click' };
 
-    draw(event, {}, ctxRef, 200, 4, 2, 'green', prevXY);
+    draw(event, {}, ctxRef, 200, 4, 2, 'green', prevXY, isZoonRef);
 
     expect(prevXY).toEqual([80, 90]);
   });
-});
 
-describe('randomDraw', () => {
-  it('runs without throwing and calls drawLine at least once', () => {
+  it('copies between canvases while zoomed in', () => {
     const ctx = mockCtx();
     const ctxRef = { current: ctx };
+    const isZoonRef = { current: true };
+    const quxRef = { current: 60 };
+    const quyRef = { current: 155 };
+    const zoomCanvasRef = { current: { getContext: (e) => {return mockCtx()} } };
+    const canvasRef = { current: '' };
 
-    // Force predictable randomness
-    jest.spyOn(Math, 'random').mockReturnValue(0.1);
+    getMandalaHelpers.getLocalCoordinates.mockReturnValue([80, 90]);
+    getMandalaHelpers.getSymmetryPoints.mockReturnValue([[80, 90]]);
 
-    getMandalaHelpers.getSymmetryPoints.mockReturnValue([[10, 10]]);
+    const prevXY = [0, 0];
+    const event = { type: 'click' };
 
-    expect(() =>
-      randomDraw(200, 4, 2, ctxRef, 'purple')
-    ).not.toThrow();
+    draw(event, {}, ctxRef, 200, 4, 2, 'green', prevXY, isZoonRef, zoomCanvasRef, canvasRef, quxRef, quyRef);
 
-    expect(ctx.beginPath).toHaveBeenCalled();
+    expect(ctxRef.current.drawImage).toHaveBeenCalled()
+    expect(prevXY).toEqual([100, 200]);
   });
 });
