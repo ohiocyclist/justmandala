@@ -21,7 +21,7 @@ jest.mock('../getlocalcoordinates.js', () => ({getMandalaHelpers: {
 
 jest.mock('../fill.js', () => ({
   __esModule: true,
-  default: jest.fn(),
+  default: jest.fn(() => true),
 }))
 
 jest.mock('../creategrid', () => ({
@@ -29,7 +29,7 @@ jest.mock('../creategrid', () => ({
 }))
 
 import fill from '../fill.js'
-import { fillWrap, zoom } from '../zoom.js'
+import { fillWrap, drawWrap, zoom } from '../zoom.js'
 import { getMandalaHelpers } from '../getlocalcoordinates.js'
 import { createGrid } from "../creategrid"
 
@@ -131,6 +131,41 @@ describe('zoomfunctions()', () => {
     expect(isZoomRef.current).toBe(true)
     expect(createGrid).toHaveBeenCalledWith(chartRef, symmetrySlider, width, isZoomRef, quxRef, quyRef)
     expect(mockCtx.drawImage).toHaveBeenCalledWith(zoomCanvasRef.current, 5, 5, 5, 5, 0, 0, 10, 10)
+  })
+
+  test('copies between canvases while zoomed in', () => {
+    function mockCtx() {
+      return {
+        beginPath: jest.fn(),
+        moveTo: jest.fn(),
+        lineTo: jest.fn(),
+        stroke: jest.fn(),
+        lineWidth: 0,
+        strokeStyle: '',
+        lineCap: '',
+        imageSmoothingEnabled: false,
+        drawImage: jest.fn()
+      }
+    }
+    const ctx = mockCtx()
+    const ctxRef = { current: ctx }
+    const isZoonRef = { current: true }
+    const quxRef = { current: 60 }
+    const quyRef = { current: 155 }
+    const zoomCanvasRef = { current: { getContext: (e) => {return mockCtx()} } }
+    const canvasRef = { current: '' }
+
+    getMandalaHelpers.getLocalCoordinates.mockReturnValue([80, 90])
+    getMandalaHelpers.getSymmetryPoints.mockReturnValue([[80, 90]])
+
+    const prevXY = [0, 0]
+    const event = { type: 'click' }
+
+    drawWrap(event, {}, ctxRef, 200, 4, 2, 'green', prevXY, isZoonRef, zoomCanvasRef, quxRef, quyRef)
+
+    expect(getMandalaHelpers.getLocalCoordinates).toHaveBeenCalled()
+    expect(ctxRef.current.drawImage).toHaveBeenCalled()
+    expect(prevXY).toEqual([100, 200])
   })
 
 })

@@ -1,26 +1,30 @@
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { MandalaControls } from '../MandalaControls';
+import React from 'react'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { MandalaControls } from '../MandalaControls'
 
 jest.mock('../randomdraw', () => ({
   randomDraw: jest.fn(),
-}));
+}))
 
 jest.mock('../mandalalibraries', () => ({
   MandalaLib: {
     handleFileInput: jest.fn(),
   },
-}));
+}))
 
 jest.mock('../ColorChooser', () => ({
   __esModule: true,
   ColorChooser: (props) => <div data-testid="color-chooser" />
-}));
+}))
 
+jest.mock('../zoom', () => ({
+  autoFillWrap: jest.fn(),
+  randomDrawWrap: jest.fn(),
+}))
 
-import { randomDraw } from '../randomdraw';
-import { autoFill } from '../autoFill';
-import { MandalaLib } from '../mandalalibraries';
+import { randomDraw } from '../randomdraw'
+import { autoFillWrap, randomDrawWrap } from '../zoom'
+import { MandalaLib } from '../mandalalibraries'
 
 describe('MandalaControls', () => {
   const defaultProps = {
@@ -52,7 +56,10 @@ describe('MandalaControls', () => {
     colorHelper: '#ffffff',
     selectedColor: 0,
     setSelectedColor: jest.fn(),
-    isZoomRef: {current: false}
+    isZoomRef: {current: false},
+    zoomCanvasRef: {current: true},
+    quxRef: {current: 0},
+    quyRef: {current: 0}
   };
 
   it('renders all sliders and labels', () => {
@@ -92,28 +99,34 @@ describe('MandalaControls', () => {
     render(<MandalaControls {...defaultProps} />);
 
     fireEvent.click(screen.getByText(/Random Mandala/i));
-    expect(randomDraw).toHaveBeenCalledWith(
+    expect(randomDrawWrap).toHaveBeenCalledWith(
       defaultProps.width,
       defaultProps.slider1,
       defaultProps.slider2,
       defaultProps.ctxRef,
-      defaultProps.color
+      defaultProps.color,
+      defaultProps.isZoomRef,
+      defaultProps.zoomCanvasRef,
+      defaultProps.quxRef,
+      defaultProps.quyRef
     );
   });
 
   it('calls autoFill when Automatically Fill Areas button is clicked', () => {
     render(<MandalaControls {...defaultProps} />);
 
-    jest.spyOn(autoFill, 'autoFill').mockReturnValue(true);    
-
     fireEvent.click(screen.getByText(/Automatically Fill Areas/i));
-    expect(autoFill.autoFill).toHaveBeenCalledWith(
+    expect(autoFillWrap).toHaveBeenCalledWith(
       defaultProps.ctxRef,
       defaultProps.width,
       defaultProps.myPalette,
       defaultProps.slider1,
       defaultProps.slider3,
-      defaultProps.radioValue
+      defaultProps.radioValue,
+      defaultProps.isZoomRef,
+      defaultProps.zoomCanvasRef,
+      defaultProps.quxRef,
+      defaultProps.quyRef
     );
   });
 

@@ -219,5 +219,10 @@ describe("getAdjacentWhite", () => {
     const result = getMandalaHelpers.getAdjacentWhite(pixels, 1, 1, width, height, "white");
 
     expect(result).toEqual([[1, 1]]);
-  });
-});
+  })
+
+  test("euclid distance", () => {
+    const result = getMandalaHelpers.euclidDistance(1, 1, 4, 5)
+    expect(result).toEqual(5)
+  })
+})

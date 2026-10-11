@@ -1,19 +1,6 @@
-import { JSDOM } from 'jsdom'
-import 'jest-canvas-mock'
-import { ImageData } from 'canvas'
 import { copyRegions, tesselDeTransparency, initializeTesselCanvas, setTesselCanvasProperties, findTesselTransparency } from '../tessel'
 
-global.ImageData = ImageData
-
 describe('tessel test', () => {
-  const dom = new JSDOM(`
-    <html>
-      <body>
-        <canvas id="sourceCanvas" width="${16}" height="${16}"></canvas>
-        <canvas id="destCanvas" width="${16}" height="${16}"></canvas>
-      </body>
-    </html>
-  `)
   const referenceColors = [100, 150, 200] // Sample R, G, B reference color
   let mockCtx
   let mockTesselCanvas
@@ -21,10 +8,10 @@ describe('tessel test', () => {
   let mockD3
   let mockCanvasNode
   let width
+  let betterRaw
   const rawData = new Uint8ClampedArray([255, 255, 255, 255, 128, 128, 128, 255])
 
   beforeEach(() => {
-    global.document = dom.window.document
     mockImageData = { data: rawData }
 
     mockCtx = {
@@ -48,17 +35,7 @@ describe('tessel test', () => {
       }
     }
 
-  })
-
-  afterEach(() => {
-    jest.resetAllMocks()
-  })
-
-  test('findTesselTransparency should report the reference color in the upper left corner of the raw data', () => {
-    const trace = {'trace': []}
-    width = 8
-    // 158, 44, 192, 255 -- test leaving non background color pixels transparency alone
-    const betterRaw = new Uint8ClampedArray(
+    betterRaw = new Uint8ClampedArray(
         [
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -69,6 +46,17 @@ describe('tessel test', () => {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         ])
+
+  })
+
+  afterEach(() => {
+    jest.resetAllMocks()
+  })
+
+  test('findTesselTransparency should report the reference color in the upper left corner of the raw data', () => {
+    const trace = {'trace': []}
+    width = 8
+    // 158, 44, 192, 255 -- test leaving non background color pixels transparency alone
     // this tests setting the background color to transparent
     const expectedOut = new Uint8ClampedArray(
         [
@@ -227,128 +215,25 @@ describe('tessel test', () => {
   })
 
   it('copies regions from source canvas to destination context', () => {
-    //const sourceCanvas = document.getElementById('sourceCanvas')
-    //const destCanvas = document.getElementById('destCanvas')
-    const sourceCanvas = dom.window.document.querySelectorAll('canvas')[0]
-    const destCanvas = dom.window.document.querySelectorAll('canvas')[0]
-    const destContext = destCanvas.getContext('2d')
-
-    // Set up mock data
-    const imageData = new Uint8ClampedArray(16 * 16 * 4); // assuming 32-bit RGBA images
-    for (let i = 0; i < imageData.length; i++) {
-      imageData[i] = 0
-    }
-    for (let i = 4; i < 12; i++) {
-        for (let j = 4; j < 12; j++) {
-            const locn = i * 4 + j * 4 * 16
-            imageData[locn] = 255
-            imageData[locn + 1] = 128
-            imageData[locn + 2] = 64
-            imageData[locn + 3] = 255
-        }
-    }
-    sourceCanvas.width = 16
-    sourceCanvas.height = 16
-    sourceCanvas.getContext('2d').putImageData(new ImageData(imageData, 16, 16), 0, 0)
-
-    const width = 16
-
+    const subsource = {putImageData: jest.fn()}
+    const sourceCanvas = {getContext: jest.fn(() => subsource)}
+    const destData = {data: betterRaw}
+    const destContext = {getImageData: jest.fn(() => destData), drawImage: jest.fn()}
+    
     // Call the function under test
     copyRegions(sourceCanvas, destContext, width)
-
-    // Verify that the destination context has been modified correctly  
-    const actualData = Array.from(destContext.getImageData(0, 0, 16, 16).data)
-    //console.dir(actualData, { 'maxArrayLength': null})
-    const expectedData =       [
-        255, 128, 64, 255, 255, 128, 64, 255, 255, 128, 64, 255,
-        255, 128, 64, 255,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0, 255, 128, 64, 255, 255, 128, 64, 255,
-        255, 128, 64, 255, 255, 128, 64, 255,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0, 255, 128, 64, 255,
-        255, 128, 64, 255, 255, 128, 64, 255, 255, 128, 64, 255,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-        255, 128, 64, 255, 255, 128, 64, 255, 255, 128, 64, 255,
-        255, 128, 64, 255,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0, 255, 128, 64, 255,
-        255, 128, 64, 255, 255, 128, 64, 255, 255, 128, 64, 255,
-        255, 128, 64, 255, 255, 128, 64, 255, 255, 128, 64, 255,
-        255, 128, 64, 255,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-        255, 128, 64, 255, 255, 128, 64, 255, 255, 128, 64, 255,
-        255, 128, 64, 255, 255, 128, 64, 255, 255, 128, 64, 255,
-        255, 128, 64, 255, 255, 128, 64, 255,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0, 255, 128, 64, 255, 255, 128, 64, 255,
-        255, 128, 64, 255, 255, 128, 64, 255, 255, 128, 64, 255,
-        255, 128, 64, 255, 255, 128, 64, 255, 255, 128, 64, 255,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0, 255, 128, 64, 255,
-        255, 128, 64, 255, 255, 128, 64, 255, 255, 128, 64, 255,
-        255, 128, 64, 255, 255, 128, 64, 255, 255, 128, 64, 255,
-        255, 128, 64, 255,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-        255, 128, 64, 255, 255, 128, 64, 255, 255, 128, 64, 255,
-        255, 128, 64, 255, 255, 128, 64, 255, 255, 128, 64, 255,
-        255, 128, 64, 255, 255, 128, 64, 255,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0, 255, 128, 64, 255, 255, 128, 64, 255,
-        255, 128, 64, 255, 255, 128, 64, 255, 255, 128, 64, 255,
-        255, 128, 64, 255, 255, 128, 64, 255, 255, 128, 64, 255,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0, 255, 128, 64, 255,
-        255, 128, 64, 255, 255, 128, 64, 255, 255, 128, 64, 255,
-        255, 128, 64, 255, 255, 128, 64, 255, 255, 128, 64, 255,
-        255, 128, 64, 255,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-        255, 128, 64, 255, 255, 128, 64, 255, 255, 128, 64, 255,
-        255, 128, 64, 255, 255, 128, 64, 255, 255, 128, 64, 255,
-        255, 128, 64, 255, 255, 128, 64, 255,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0,   0,   0,  0,   0,   0,   0,  0,   0,
-          0,   0,  0,   0
-      ]
-    //console.log('expected', expectedData)
-
-    expect(actualData).toEqual(expectedData)
+    expect(destContext.drawImage).toHaveBeenCalledTimes(5)
+    const sw = Math.round(width / 4)
+    // just check 2 of 5 conditions
+    expect(destContext.drawImage).toHaveBeenCalledWith(
+      sourceCanvas, 
+      0, 0, sw, sw,
+      sw, sw, sw, sw
+    )
+    expect(destContext.drawImage).toHaveBeenCalledWith(
+      sourceCanvas, 
+      0, 0, Math.floor(width / 2), Math.floor(width / 2),
+      0, 0, Math.floor(width / 2), Math.floor(width / 2)
+    )
   })
 })

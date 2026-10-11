@@ -51,7 +51,6 @@ describe('draw', () => {
   it('calls drawLine when mouse is down', () => {
     const ctx = mockCtx();
     const ctxRef = { current: ctx };
-    const isZoonRef = { current: false };
 
     getMandalaHelpers.getLocalCoordinates.mockReturnValue([50, 60]);
     getMandalaHelpers.getSymmetryPoints.mockReturnValue([[50, 60]]);
@@ -59,9 +58,8 @@ describe('draw', () => {
     const prevXY = [10, 20];
     const event = { buttons: 1 };
 
-    draw(event, {}, ctxRef, 200, 4, 2, 'blue', prevXY, isZoonRef);
+    draw(event, 5, 6, ctxRef.current, 200, 4, 2, 'blue', prevXY);
 
-    expect(getMandalaHelpers.getLocalCoordinates).toHaveBeenCalled();
     expect(ctx.beginPath).toHaveBeenCalled();
     expect(ctx.moveTo).toHaveBeenCalled();
     expect(ctx.lineTo).toHaveBeenCalled();
@@ -70,7 +68,6 @@ describe('draw', () => {
   it('updates prevXY on click', () => {
     const ctx = mockCtx();
     const ctxRef = { current: ctx };
-    const isZoonRef = { current: false };
 
     getMandalaHelpers.getLocalCoordinates.mockReturnValue([80, 90]);
     getMandalaHelpers.getSymmetryPoints.mockReturnValue([[80, 90]]);
@@ -78,29 +75,9 @@ describe('draw', () => {
     const prevXY = [0, 0];
     const event = { type: 'click' };
 
-    draw(event, {}, ctxRef, 200, 4, 2, 'green', prevXY, isZoonRef);
+    draw(event, 80, 90, ctxRef.current, 200, 4, 2, 'green', prevXY);
 
     expect(prevXY).toEqual([80, 90]);
   });
 
-  it('copies between canvases while zoomed in', () => {
-    const ctx = mockCtx();
-    const ctxRef = { current: ctx };
-    const isZoonRef = { current: true };
-    const quxRef = { current: 60 };
-    const quyRef = { current: 155 };
-    const zoomCanvasRef = { current: { getContext: (e) => {return mockCtx()} } };
-    const canvasRef = { current: '' };
-
-    getMandalaHelpers.getLocalCoordinates.mockReturnValue([80, 90]);
-    getMandalaHelpers.getSymmetryPoints.mockReturnValue([[80, 90]]);
-
-    const prevXY = [0, 0];
-    const event = { type: 'click' };
-
-    draw(event, {}, ctxRef, 200, 4, 2, 'green', prevXY, isZoonRef, zoomCanvasRef, canvasRef, quxRef, quyRef);
-
-    expect(ctxRef.current.drawImage).toHaveBeenCalled()
-    expect(prevXY).toEqual([100, 200]);
-  });
 });

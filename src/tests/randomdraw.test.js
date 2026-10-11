@@ -14,6 +14,7 @@ jest.mock('../getlocalcoordinates', () => {
       ...actual.getMandalaHelpers,
       getLocalCoordinates: jest.fn(),
       getSymmetryPoints: jest.fn(),
+      euclidDistance: (x, y, w, z) => Math.sqrt(Math.pow((x - w), 2) + Math.pow((y - z), 2)), // not mocking this one
       //getLocalCoordinates: actual.getMandalaHelpers.getLocalCoordinates
     }
   }
@@ -33,19 +34,21 @@ function mockCtx() {
 }
 
 describe('randomDraw', () => {
-  it('runs without throwing and calls drawLine at least once', () => {
+  it('runs without throwing and calls drawLine at least once per 8 random mandalas', () => {
     const ctx = mockCtx();
     const ctxRef = { current: ctx };
 
     // Force predictable randomness
-    jest.spyOn(Math, 'random').mockReturnValue(0.5);
+    for (let i = 0; i < 8; i++) {
+      jest.spyOn(Math, 'random').mockReturnValue((i) / 8)
 
-    getMandalaHelpers.getSymmetryPoints.mockReturnValue([[10, 10]]);
+      getMandalaHelpers.getSymmetryPoints.mockReturnValue([[10, 10]])
 
-    expect(() =>
-      randomDraw(200, 4, 2, ctxRef, 'purple')
-    ).not.toThrow();
+      expect(() =>
+        randomDraw(400, 8, 4, ctxRef, 'purple')
+      ).not.toThrow()
 
-    expect(drawLine).toHaveBeenCalled();
-  });
-});
+      expect(drawLine).toHaveBeenCalled()
+    }
+  })
+})
