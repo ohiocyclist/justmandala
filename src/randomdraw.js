@@ -7,15 +7,15 @@ const linspace = (start, end, num) => {
     return Array.from({ length: num }, (_, i) => start + i * step)
 }
 
-function drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter) {
+function drawLineShift(curx, cury, endx, endy, ctx, width, slider1, slider2, color, xCenter) {
   // do all the shifting to the center here for the kite style random mandala
   // kite style random mandala does not use extraMirror but uses radial symmetry
   let extraMirror = false
   let nosym = false
-  drawLine(xCenter - curx, xCenter - cury, xCenter - endx, xCenter - endy, ctxRef.current, width, slider1, slider2, color, nosym, extraMirror)
+  drawLine(xCenter - curx, xCenter - cury, xCenter - endx, xCenter - endy, ctx, width, slider1, slider2, color, nosym, extraMirror)
 }
 
-function voronoiTrace(pointList, ctxRef, width, slider1, slider2, color) {
+function voronoiTrace(pointList, ctx, width, slider1, slider2, color) {
   // trace out the points that are equidistant from the roots
   let previ = 0
   let prevj = 0
@@ -50,8 +50,8 @@ function voronoiTrace(pointList, ctxRef, width, slider1, slider2, color) {
                     prevj = j
                   }
                 
-                  // (x1, y1, x2, y2, ctxRef, width, slider1, slider2, color, nosym=false, extraMirror=true)
-                  drawLine(i, j, previ, prevj, ctxRef.current, width, slider1, slider2, color)
+                  // (x1, y1, x2, y2, ctx, width, slider1, slider2, color, nosym=false, extraMirror=true)
+                  drawLine(i, j, previ, prevj, ctx, width, slider1, slider2, color)
                   previ = i
                   prevj = j
                   tubreak = true
@@ -68,8 +68,7 @@ function voronoiTrace(pointList, ctxRef, width, slider1, slider2, color) {
   }
 }
 
-export function randomDraw(width, slider1, slider2, ctxRef, color) {
-    let ctx = ctxRef.current
+export function randomDraw(width, slider1, slider2, ctx, color) {
     let xCenter = width / 2
     let holdColor = color
     // the user can draw the outline in any color they like but autodraw is black
@@ -113,7 +112,7 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
                             Math.sin(angle) * figscale + xCenter + i + j * figscale * 2 + jittersize]
               // circular keep-out
               if (getMandalaHelpers.euclidDistance(thislocs[0], thislocs[1], xCenter, xCenter) < xCenter && lastlocs[0] != 0) {
-                drawLine(lastlocs[0], lastlocs[1], thislocs[0], thislocs[1], ctxRef.current, width, slider1, slider2, color)
+                drawLine(lastlocs[0], lastlocs[1], thislocs[0], thislocs[1], ctx, width, slider1, slider2, color)
               }
               lastlocs = thislocs
             }
@@ -160,7 +159,7 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
                 geoPoints.push(newPoints[j])
             }
         }
-        voronoiTrace(startPoints, ctxRef, width, slider1, slider2, color)        
+        voronoiTrace(startPoints, ctx, width, slider1, slider2, color)        
       } else if (randNum < 0.375) {
         // kite style, first worked out in Jupyter Notebook.  Original did not have access to the symmetry function so it has its own unused symmetry built in.
         ctx.strokeStyle = color
@@ -216,32 +215,32 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
               endx = mymxy[tapLevel].x * larr * scaleup
               endy = mymxy[tapLevel].y * larr * scaleup
             }
-            drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+            drawLineShift(curx, cury, endx, endy, ctx, width, slider1, slider2, color, xCenter)
             endx = mymxy[tapLevel].x * myrad * prevlar
             endy = mymxy[tapLevel].y * myrad * prevlar
-            drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+            drawLineShift(curx, cury, endx, endy, ctx, width, slider1, slider2, color, xCenter)
             curx = myxy[tapLevel].x * larr
             cury = myxy[tapLevel].y * larr
-            drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+            drawLineShift(curx, cury, endx, endy, ctx, width, slider1, slider2, color, xCenter)
             endx = mymxy[tapLevel].x * larr * scaleup
             endy = mymxy[tapLevel].y * larr * scaleup
-            drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+            drawLineShift(curx, cury, endx, endy, ctx, width, slider1, slider2, color, xCenter)
             // fxy(rowix, rowiy, level, (x) => ( [x[0] * zarr, x[1] * myrad * prevlar / discount, x[2] * zarr, x[1] * larr * scaleup * tdiscount]), myxfxy, mymxy, mysifxy)
             if (inners) {
               curx = myxfxy[tapLevel].x * zarr
               cury = myxfxy[tapLevel].y * zarr
               endx = mymxy[tapLevel].x * larr * scaleup * tdiscount
               endy = mymxy[tapLevel].y * larr * scaleup * tdiscount
-              drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+              drawLineShift(curx, cury, endx, endy, ctx, width, slider1, slider2, color, xCenter)
               endx = mymxy[tapLevel].x * myrad * prevlar / discount
               endy = mymxy[tapLevel].y * myrad * prevlar / discount
-              drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+              drawLineShift(curx, cury, endx, endy, ctx, width, slider1, slider2, color, xCenter)
               curx = mysifxy[tapLevel].x * zarr
               cury = mysifxy[tapLevel].y * zarr
-              drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+              drawLineShift(curx, cury, endx, endy, ctx, width, slider1, slider2, color, xCenter)
               endx = mymxy[tapLevel].x * larr * scaleup * tdiscount
               endy = mymxy[tapLevel].y * larr * scaleup * tdiscount
-              drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+              drawLineShift(curx, cury, endx, endy, ctx, width, slider1, slider2, color, xCenter)
             }
           } else {
             // fxy(rowx, rowy, level, (x) => ( [x[0] * prevlar, x[1] * larr, x[0] * larr * scaleup, x[2] * larr]), myxy, mymxy, myfxy)
@@ -250,32 +249,32 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
             cury = myxy[tapLevel].y * prevlar
             endx = myfxy[tapLevel].x * larr
             endy = myfxy[tapLevel].y * larr
-            drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+            drawLineShift(curx, cury, endx, endy, ctx, width, slider1, slider2, color, xCenter)
             endx = mymxy[tapLevel].x * larr
             endy = mymxy[tapLevel].y * larr
-            drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+            drawLineShift(curx, cury, endx, endy, ctx, width, slider1, slider2, color, xCenter)
             curx = myxy[tapLevel].x * larr * scaleup
             cury = myxy[tapLevel].y * larr * scaleup
-            drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+            drawLineShift(curx, cury, endx, endy, ctx, width, slider1, slider2, color, xCenter)
             endx = myfxy[tapLevel].x * larr
             endy = myfxy[tapLevel].y * larr
-            drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+            drawLineShift(curx, cury, endx, endy, ctx, width, slider1, slider2, color, xCenter)
             // fxy(rowix, rowiy, level, (x) => ( [x[0] * zarr, x[1] * myrad * prevlar / discount, x[2] * zarr, x[1] * larr * scaleup * tdiscount]), myspxy, myxy, mysfxy)
             if (inners) {
               curx = myspxy[tapLevel].x * zarr
               cury = myspxy[tapLevel].y * zarr
               endx = myxy[tapLevel].x * larr * scaleup * tdiscount
               endy = myxy[tapLevel].y * larr * scaleup * tdiscount
-              drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+              drawLineShift(curx, cury, endx, endy, ctx, width, slider1, slider2, color, xCenter)
               endx = myxy[tapLevel].x * myrad * prevlar / discount
               endy = myxy[tapLevel].y * myrad * prevlar / discount
-              drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+              drawLineShift(curx, cury, endx, endy, ctx, width, slider1, slider2, color, xCenter)
               curx = mysfxy[tapLevel].x * zarr
               cury = mysfxy[tapLevel].y * zarr
-              drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+              drawLineShift(curx, cury, endx, endy, ctx, width, slider1, slider2, color, xCenter)
               endx = myxy[tapLevel].x * larr * scaleup * tdiscount
               endy = myxy[tapLevel].y * larr * scaleup * tdiscount
-              drawLineShift(curx, cury, endx, endy, ctxRef, width, slider1, slider2, color, xCenter)
+              drawLineShift(curx, cury, endx, endy, ctx, width, slider1, slider2, color, xCenter)
             }
           }
         }
@@ -319,7 +318,7 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
             let pi = Math.PI
             let curendx = startx + step * Math.cos(pi * j / stepup)
             let curendy = starty - step * Math.sin(pi * j / stepup)
-            drawLine(curx, cury, curendx, curendy, ctxRef.current, width, slider1, slider2, color)
+            drawLine(curx, cury, curendx, curendy, ctx, width, slider1, slider2, color)
             curx = curendx
             cury = curendy
           }
@@ -339,13 +338,13 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
           let startx = xCenter - (i + splayfactor) * (xCenter / stepfraction)
           let endx = xCenter + (i + splayfactor) * (xCenter / stepfraction)
           let yloc = xCenter - (i + 1) * (xCenter / stepfraction)
-          drawLine(startx, yloc, endx, yloc, ctxRef.current, width, slider1, slider2, color)
+          drawLine(startx, yloc, endx, yloc, ctx, width, slider1, slider2, color)
         }
       } else if (randNum < 0.75) {
         // just a bunch of straight lines style
         ctx.strokeStyle = color
         let offset = 40 * Math.random()
-        drawLine(offset, xCenter - offset, xCenter, xCenter - offset, ctxRef.current, width, slider1, slider2, color)
+        drawLine(offset, xCenter - offset, xCenter, xCenter - offset, ctx, width, slider1, slider2, color)
         for (let i = 0; i < 4; i++) {
           let usei = i
           // add another inner layer between 0 and 1
@@ -358,7 +357,7 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
           if (i === 2) {
               starty = startx
           }
-          drawLine(startx, starty, startx + offset, Math.abs(width - starty), ctxRef.current, width, slider1, slider2, color)
+          drawLine(startx, starty, startx + offset, Math.abs(width - starty), ctx, width, slider1, slider2, color)
         }
       } else if (randNum < 0.875) {
         // interlocking crossing lines style
@@ -390,7 +389,7 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
           if (endy > width - edgekeep) {
             endy = width - edgekeep
           }
-          drawLine(startx, starty, endx, endy, ctxRef.current, width, slider1, slider2, color)
+          drawLine(startx, starty, endx, endy, ctx, width, slider1, slider2, color)
         }
       } else {
         // push from the edge to the center style
@@ -426,7 +425,7 @@ export function randomDraw(width, slider1, slider2, ctxRef, color) {
             xLocn = xCenter
           }
           ctx.strokeStyle = color
-          drawLine(currentStart[0], currentStart[1], xLocn, yLocn, ctxRef.current, width, slider1, slider2, color)
+          drawLine(currentStart[0], currentStart[1], xLocn, yLocn, ctx, width, slider1, slider2, color)
           currentStart = [xLocn, yLocn]
         }
       }

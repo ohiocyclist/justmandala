@@ -2,21 +2,20 @@ import React from 'react'
 import { Button, Form, Row, Col, ToggleButtonGroup, ToggleButton } from 'react-bootstrap'
 import { MandalaLib } from './mandalalibraries'
 import { ColorChooser } from './ColorChooser'
-import { autoFill } from './autoFill'
-import { randomDraw} from './randomdraw'
+import { autoFillWrap, randomDrawWrap } from './zoom'
 import { downloadMandala } from './downloadmandala'
 
 export function MandalaControls({slider1, handleSlider1Change, slider2, handleSlider2Change, slider3, handleSlider3Change, myLightDark, myPalette, 
     setMyPalette, setCurrentColor, toastId, resetCanvas, ctxRef, color, width, radioValue, handleRadioChange, handleMandalaFileInput, fileInputRef, 
     handleUndo, canvasRef, undoRef, handleDrawFillChange, fillOption, handleTesselate, drawOption, colors, setColorHelper, colorHelper, selectedColor, 
-    setSelectedColor, isZoomRef}) {
+    setSelectedColor, isZoomRef, zoomCanvasRef, quxRef, quyRef}) {
     
     const randomDrawUndoWrapper = (width, slider1, slider2, ctxRef, color, canvasRef, undoRef, isZoomRef) => {
       // make undo possible
       if (!isZoomRef.current) {
         undoRef.current = canvasRef.current.toDataURL("image/png")      
       }
-      randomDraw(width, slider1, slider2, ctxRef, color)
+      randomDrawWrap(width, slider1, slider2, ctxRef, color, isZoomRef, zoomCanvasRef, quxRef, quyRef)
     }
 
     const autoFillUndoWrapper = (ctxRef, width, myPalette, slider1, slider3, radioValue, canvasRef, undoRef, isZoomRef) => {
@@ -24,7 +23,7 @@ export function MandalaControls({slider1, handleSlider1Change, slider2, handleSl
       if (!isZoomRef.current) {
         undoRef.current = canvasRef.current.toDataURL("image/png")      
       }
-      autoFill.autoFill(ctxRef, width, myPalette, slider1, slider3, radioValue)
+      autoFillWrap(ctxRef, width, myPalette, slider1, slider3, radioValue, isZoomRef, zoomCanvasRef, quxRef, quyRef)
     }
     
     const downloadMandalaWrap = () => {downloadMandala(canvasRef)}

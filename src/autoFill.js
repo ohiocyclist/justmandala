@@ -71,11 +71,10 @@ export class autoFill {
     }  
   }
 
-  static autoFill = (ctxRef, width, myPalette, slider1, slider3, radioValue) => {
+  static autoFill = (ctx, width, myPalette, slider1, slider3, radioValue) => {
     // first, traverse the entire image and find all the fillable areas
     let start = Date.now()
     const fillableAreas = []
-    const ctx = ctxRef.current
     const img = ctx.getImageData(0, 0, width, width)
     const bgdata = img.data
     // all this is necessary to turn this into an array of hex sequences

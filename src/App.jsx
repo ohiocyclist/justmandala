@@ -4,7 +4,7 @@ import { useQueryParam, StringParam, withDefault, NumberParam } from 'use-query-
 import { Button, Container, Row, Col } from 'react-bootstrap'
 import "bootstrap/dist/css/bootstrap.min.css"
 import drop from './drop'
-import { zoom, fillWrap } from './zoom'
+import { zoom, fillWrap, drawWrap } from './zoom'
 import { draw } from './draw'
 import {createTessel} from './tessel'
 import { getMandalaHelpers } from './getlocalcoordinates'
@@ -289,7 +289,7 @@ function JustMandala() {
       // wrapper is to allow zooming
       fillWrap(event, chartRef, ctxRef, color, width, symmetrySlider, fillOption, isZoomRef, zoomCanvasRef, quxRef, quyRef)
     } else if (drawFill.current === 'draw') {
-      draw(event, chartRef, ctxRef, width, symmetrySlider, brushSizeSlider, color, prevXY.current, isZoomRef, zoomCanvasRef, canvasRef, quxRef, quyRef)
+      drawWrap(event, chartRef, ctxRef, width, symmetrySlider, brushSizeSlider, color, prevXY.current, isZoomRef, zoomCanvasRef, quxRef, quyRef)
     } else if (drawFill.current === 'zoom') {
       zoom(event, isZoomRef, canvasRef, chartRef, zoomCanvasRef, width, quxRef, quyRef, symmetrySlider)
     } else {
@@ -364,7 +364,7 @@ function JustMandala() {
         radioValue={fillOption} handleRadioChange={handleRadioChange} handleMandalaFileInput={handleMandalaFileInput} fileInputRef={fileInputRef}
         handleUndo={handleUndo} canvasRef={canvasRef} undoRef={undoRef} handleDrawFillChange={handleDrawFillChange} fillOption={fillOption} 
         handleTesselate={createTesselWrap} drawOption={drawOption} colors={colors} setColorHelper={setColorHelper} colorHelper={colorHelper}
-        selectedColor={selectedColor} setSelectedColor={setSelectedColor} isZoomRef={isZoomRef}
+        selectedColor={selectedColor} setSelectedColor={setSelectedColor} isZoomRef={isZoomRef} zoomCanvasRef={zoomCanvasRef} quxRef={quxRef} quyRef={quyRef}
       />
       </Col></Row>
       </div></Collapse>

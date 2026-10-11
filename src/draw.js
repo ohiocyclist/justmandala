@@ -46,51 +46,31 @@ export function drawLine(x1, y1, x2, y2, ctx, width, slider1, slider2, color, no
     ctx.stroke();
   }
 
-export function draw(e, chartRef, ctxRef, width, slider1, slider2, color, prevXY, isZoomRef, zoomCanvasRef, canvasRef, quxRef, quyRef) {
-    // turn user inputs into lines on the page
-    var coord = getMandalaHelpers.getLocalCoordinates(e, chartRef);
-    // console.log(" getLocalCoordinates[0] " + coord[0]);
+export function draw(e, x, y, ctx, width, slider1, slider2, color, prevXY) {
+  // turn user inputs into lines on the page
+  let anyDraw = false
+  if (ctx) {
+    ctx.strokeStyle = color
+    ctx.lineWidth = Number(slider2)
 
-    var x = coord[0]
-    var y = coord[1]
-
-    let ctx = ctxRef.current
-    if (isZoomRef.current) {
-      x = Math.round(x / 2) + quxRef.current
-      y = Math.round(y / 2) + quyRef.current
-      ctx = zoomCanvasRef.current.getContext("2d")
-    }
-    if (ctx) {
-      ctx.strokeStyle = color
-      ctx.lineWidth = Number(slider2)
-
-      let anyDraw = false
-      if (e.buttons == 1) {
-        // continue a mouse move
-        drawLine(prevXY[0], prevXY[1], x, y, ctx, width, slider1, slider2, color)
-        anyDraw = true
-      } else if (e.type == "click" || e.type == "touchstart") {
-        // this is the start of a line series so we reset previous here
-        prevXY[0] = x
-        prevXY[1] = y
-        drawLine(prevXY[0], prevXY[1], x, y, ctx, width, slider1, slider2, color)
-        anyDraw = true
-      } else if (e.type == "touchmove" || e.type.includes("touch")) {
-        // continue a touch move
-        drawLine(prevXY[0], prevXY[1], x, y, ctx, width, slider1, slider2, color)
-        anyDraw = true
-      }
-      // connect the next segment to the current one
+    if (e.buttons == 1) {
+      // continue a mouse move
+      drawLine(prevXY[0], prevXY[1], x, y, ctx, width, slider1, slider2, color)
+      anyDraw = true
+    } else if (e.type == "click" || e.type == "touchstart") {
+      // this is the start of a line series so we reset previous here
       prevXY[0] = x
       prevXY[1] = y
-      if (anyDraw && isZoomRef.current) {
-        // let ctx = zoomCanvasRef.current.getContext("2d")
-        const hawidth = Math.floor(width / 2)
-        ctxRef.current.drawImage(
-            zoomCanvasRef.current, 
-            quxRef.current, quyRef.current, hawidth, hawidth,
-            0, 0, width, width
-        )
-      }
+      drawLine(prevXY[0], prevXY[1], x, y, ctx, width, slider1, slider2, color)
+      anyDraw = true
+    } else if (e.type == "touchmove" || e.type.includes("touch")) {
+      // continue a touch move
+      drawLine(prevXY[0], prevXY[1], x, y, ctx, width, slider1, slider2, color)
+      anyDraw = true
     }
+    // connect the next segment to the current one
+    prevXY[0] = x
+    prevXY[1] = y
   }
+  return anyDraw
+}
