@@ -317,6 +317,11 @@ function JustMandala() {
         }      
       }
       reader.readAsDataURL(selectedFile);
+      // always reset zoom when opening a file
+      isZoomRef.current = false
+      quxRef.current = 0
+      quyRef.current = 0
+      createGrid(chartRef, symmetrySlider, width, isZoomRef, quxRef, quyRef)
     }
   }
 
