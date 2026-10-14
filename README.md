@@ -19,6 +19,8 @@ Put a toe in the water on unit testing with jest, npm test
 
 if you're not a fan of npm / React, there is a vanilla JS version that offers less functionality, but can just be served directly ( python -m http.server in the same folder as the 5 files and http://localhost:8000/justmandala.html in your browser for example -- but you don't even have to do that much for vanilla JS, you can just double-click the html)
 
+Similarly, the "python" folder is also its own port of a stripped-down version of the program, done entirely by Microsoft Copilot
+
 ![Mandala Screenshot](https://github.com/ohiocyclist/justmandala/blob/main/Mandalasamp.png?raw=true)
 ![Mandala Screenshot](https://github.com/ohiocyclist/justmandala/blob/main/talavera.png?raw=true)
 ![Mandala Screenshot](https://github.com/ohiocyclist/justmandala/blob/main/mandala8.png?raw=true)
