@@ -13,7 +13,7 @@ let gslider = document.getElementById("greenSlider")
 let gsliderValueDisplay = document.getElementById("gsliderValue")
 let bslider = document.getElementById("blueSlider")
 let bsliderValueDisplay = document.getElementById("bsliderValue")
-let color = "#1A202C"
+let color = "#000000"
 let drawOrFill = 'draw'
 let fillOrOther = 'every'
 let fillOrOtherDisplay = document.getElementById("fillOrOther")
@@ -142,11 +142,9 @@ function isWhite({ r, g, b, a }) {
     return r === 255 && g === 255 && b === 255 && a === 255
 }
 
-function getAdjacentWhite(ctx, startX, startY, width, height) {
+function getAdjacentWhite(data, startX, startY, width, height, blackfun) {
     // determine what area we are filling in
     const stack = new Int32Array(width * height * 2)
-    const img = ctx.getImageData(0, 0, width, width)
-    const data = img.data
     let sp = 0
 
     stack[sp++] = startX
@@ -173,7 +171,13 @@ function getAdjacentWhite(ctx, startX, startY, width, height) {
       const i = idx * 4
       const r = data[i], g = data[i + 1], b = data[i + 2]
 
-      if (!(r === curColorR && g === curColorG && b === curColorB)) continue
+      if (blackfun) {
+        // if (r < 240 && g < 240 && b < 240) console.log(r, g, b)
+        if (r === 0 && g === 0 && b === 0 ) continue
+        //if (Math.abs(x - startX) > 200 || Math.abs(y - startY) > 200) continue
+      } else {
+        if (!(r === curColorR && g === curColorG && b === curColorB)) continue
+      }
 
       result.push([x, y])
 
@@ -212,29 +216,49 @@ function fill(e) {
   if (e.buttons == 1 || e.type == "touchmove") {
     var x = Math.floor(coord[0])
     var y = Math.floor(coord[1])
-    let symmetricPoints = getSymmetryPoints(x, y)
+    let img = ctx.getImageData(0, 0, symmetry, symmetry)
+    let data = img.data
+    let allcoords = getAdjacentWhite(data, x, y, symmetry, symmetry, false)
+    const pimg = ctx.getImageData(x, y, 1, 1)
+    const da = pimg.data    
+    const refr = da[0]
+    const refg = da[1]
+    const refb = da[2]
+    let symmetricPoints = []
+    // help target small areas
+    if (allcoords.length < 200) {
+      for (let i = 0; i < allcoords.length; i += 4) {
+        let thispoints = getSymmetryPoints(allcoords[i][0], allcoords[i][1])
+        symmetricPoints = [...symmetricPoints, ...thispoints]
+      }
+    } else {
+      symmetricPoints = getSymmetryPoints(x, y)
+    }
     if (fillOrOther === 'one') {
       symmetricPoints = [[x, y]]
     }
-    const img = ctx.getImageData(0, 0, symmetry, symmetry)
-    const data = img.data
+    img = ctx.getImageData(0, 0, symmetry, symmetry)
+    data = img.data
     let usecolor = hexToRgb(color)
     let idx = 0
     for (const [prex, prey] of symmetricPoints) {
-      // there tend to be two mirrors in one white zone, necessitating division by 4 to hit every other white zone
-      if (idx % 4 != 0 && fillOrOther === 'other') {
+      let complocn = Math.floor((prey * symmetry + prex) * 4)
+      if (data[complocn] === refr && data[complocn + 1] === refg && data[complocn + 2] === refb) {
+        // there tend to be two mirrors in one white zone, necessitating division by 4 to hit every other white zone
+        if (idx % 4 != 0 && fillOrOther === 'other') {
+          idx = idx + 1
+          continue
+        }
         idx = idx + 1
-        continue
-      }
-      idx = idx + 1
-      let allcoords = getAdjacentWhite(ctx, Math.floor(prex), Math.floor(prey), symmetry, symmetry)
-    
-      for (const [x, y] of allcoords) {
-        const i = (y * symmetry + x) * 4
-        data[i]     = usecolor.r
-        data[i + 1] = usecolor.g
-        data[i + 2] = usecolor.b
-        data[i + 3] = 255
+        let allcoords = getAdjacentWhite(data, Math.floor(prex), Math.floor(prey), symmetry, symmetry, false)
+        
+        for (const [x, y] of allcoords) {
+          const i = (y * symmetry + x) * 4
+          data[i]     = usecolor.r
+          data[i + 1] = usecolor.g
+          data[i + 2] = usecolor.b
+          data[i + 3] = 255
+        }
       }
     }
     
@@ -310,13 +334,13 @@ function getSymmetryPoints(x, y) {
     var theta = angle + ((Math.PI * 2) / radian) * i; // Radians
     x = ctrX + Math.sin(theta) * dist;
     y = ctrY - Math.cos(theta) * dist;
-    result.push([x, y]);
+    result.push([Math.round(x), Math.round(y)]);
     // this mirrors the points around the spoke of the symmetry
     // hence symmetry === 2 is actually 4 etc.
     // but it allows the user to easily draw closed areas
     if (true) {
       x = ctrX - Math.sin(theta) * dist;
-      result.push([x, y]);
+      result.push([Math.round(x), Math.round(y)]);
     }
   }
 
@@ -416,7 +440,7 @@ function randomDraw() {
   const randval = Math.random()
   if (randval < 0.17) {
     // geometric forms style
-    for (i = -10; i < xCenter - 255; i += 55) {
+    for (i = -10; i < xCenter - 150; i += 52) {
       // skew y for the broader spectrum
       let jend = 0
       // more space to fill further out
@@ -441,11 +465,14 @@ function randomDraw() {
           subdivide = 17
         }
         let figscale = 50
-        let lastlocs = [xCenter + i, xCenter + figscale + i]
-        for (angle = 0; angle <= Math.PI * 2; angle += Math.PI * 2 / subdivide) {
+        let lastlocs = [0, 0]
+        const angshift = Math.PI * Math.random() / 2
+        for (preangle = 0; preangle <= Math.PI * 2; preangle += Math.PI * 2 / subdivide) {
+          const angle = preangle - Math.PI / 4 + angshift
           const thislocs = [Math.cos(angle) * figscale + xCenter + i + jittersize, 
                         Math.sin(angle) * figscale + xCenter + i + j * figscale * 2 + jittersize]
-          if (angle > 0) {
+          // circular keep-out
+          if (euclidDistance(thislocs[0], thislocs[1], xCenter, xCenter) < xCenter && lastlocs[0] != 0) {
             drawLine(lastlocs[0], lastlocs[1], thislocs[0], thislocs[1])
           }
           lastlocs = thislocs
@@ -473,7 +500,7 @@ function randomDraw() {
     ]
     // try to keep the points in a narrower comb
     if (Math.random() < 0.5) {
-        startPoint = [
+        startPoints = [
             [xCenter + 300 + 100 * Math.random(), xCenter + 50 + 50 * Math.random()],
             [xCenter + 300 + 100 * Math.random(), xCenter - 25 + 50 * Math.random()],
             [xCenter + 250 + 100 * Math.random(), xCenter - 10 + 20 * Math.random()],
@@ -624,10 +651,148 @@ function randomDraw() {
   }
 }
 
+function autofill() {
+  const fillableAreas = []
+  const img = ctx.getImageData(0, 0, symmetry, symmetry)
+  const bgdata = img.data
+  getFillableAreas(symmetry, slider2.value, bgdata, fillableAreas)
+  // then step through fillable areas
+  const img2 = ctx.getImageData(0, 0, symmetry, symmetry)
+  stepThroughFillables(img2, fillableAreas, colorlist, symmetry)
+  ctx.putImageData(img2, 0, 0)
+}
+
+function getFillableAreas(width, slider1, bgdata, fillableAreas) {
+  // get the fillable areas we want to fill
+  // use the symmetry to cut down on calls
+  // we want something wide enough to carry one symmetry in all cases
+  let wideFactor = (width / 2 - 20) * Math.PI / Number(slider1) * 1.1
+  const igdata = bgdata.slice()
+  if (wideFactor < 5) wideFactor = 5
+  const seen = new Set()
+  for (let prex = 0; prex < wideFactor; prex++) {
+    for (let prey = 0; prey < width / 2; prey++) {
+      // work outward from the center (for order of color purposes)
+      // we skip some pixels for speed; that can miss areas sometimes if they're very small
+      let x = prex % 2 === 0 ? Math.abs(width / 2 - prex) : width / 2 + prex
+      let y = prey % 2 === 0 ? Math.abs(width / 2 - prey) : width / 2 + prey
+      if (seen.has([x, y].join(','))) {
+        continue
+      }
+      // do this in symmetric points order
+      // don't revisit seen points
+      // get the center of area first
+      blackfun = true
+      let startcoords = getAdjacentWhite(igdata, x, y, width, width, blackfun)
+      let total = startcoords.reduce((acc, curr) => {return [acc[0] + curr[0], acc[1] + curr[1]]}, [0, 0])
+      x = Math.round(total[0] / startcoords.length)
+      y = Math.round(total[1] / startcoords.length)
+      const symmetricPoints = []
+      let presymmetricPoints = getSymmetryPoints(x, y)
+      for (let [xx, yy] of presymmetricPoints) {
+        if (!seen.has([xx, yy].join(','))) symmetricPoints.push([xx, yy])
+        seen.add([xx, yy].join(','))
+      }
+      for (let coord of startcoords) {
+        seen.add(coord.join(','))
+      }
+      const thisArea = []
+      let emptyCounter = 0
+      // capture the center
+      if ((prex === 0 && prey === 0) || symmetricPoints.length >= Math.floor(slider1)) {
+        let alwayswhite = false
+        for (let [xx, yy] of symmetricPoints) {
+          xx = Math.round(xx)
+          yy = Math.round(yy)
+          let i = (yy * width + xx) * 4
+          // only fill white pixel areas
+          let canWhite = isWhite({r: bgdata[i], g: bgdata[i + 1], b: bgdata[i + 2], a: 255})
+          if (!canWhite) {
+            i = i - 8
+            xx = xx - 2
+            canWhite = isWhite({r: bgdata[i], g: bgdata[i + 1], b: bgdata[i + 2], a: 255})
+            if (!canWhite) {
+              i = i + 24
+              xx = xx + 6
+              canWhite = isWhite({r: bgdata[i], g: bgdata[i + 1], b: bgdata[i + 2], a: 255})
+            }
+          }
+          if (alwayswhite || canWhite) {
+            alwayswhite = false
+            emptyCounter += 1
+            let allcoords = getAdjacentWhite(bgdata, xx, yy, width, width, false)
+            if (allcoords.length > 0) {
+              let exclusion = false
+              for (const [x, y] of allcoords) {
+                // don't use the edge areas
+                if ((x === 0 && (y === 0 || y === width - 1)) || (x === width - 1 && (y === 0 || y === width - 1))) {
+                  exclusion = true
+                }
+                // bgdata is just to claim space, so it also claims exclusion areas we won't fill later
+                const j = (y * width + x) * 4
+                bgdata[j]     = 0
+                bgdata[j + 1] = 0
+                bgdata[j + 2] = 0
+                bgdata[j + 3] = 255
+              }
+              if (!exclusion) {
+                // this does the actual filling (pass by reference)
+                thisArea.push(allcoords)
+              }
+            }
+          } else {
+            //console.log(`not white pixel ${xx} ${yy}`)
+          }
+        }
+        if ((prex === 0 && prey === 0) || emptyCounter >= Math.floor(slider1 / 2)) {
+          fillableAreas.push(thisArea)
+        }
+      }
+    }
+  }
+}
+
+function stepThroughFillables(img2, fillableAreas, palArr, width) {
+  // fillableAreas is an array of arrays of points that represent areas to fill in
+  // in color stepping order (of palArr)
+  const data = img2.data
+  let palLocn = 0
+  let altpal = 1
+  for (let i = 0; i < fillableAreas.length; i++) {
+    let usecolor = hexToRgb(palArr[palLocn][1])
+    let altcolor = hexToRgb(palArr[altpal][1])
+    palLocn = palLocn + 1
+    altpal = altpal + 1
+    // -1 -- don't use white as an autofill color
+    if (palLocn >= palArr.length - 1) palLocn = 0
+    if (altpal >= palArr.length - 1) altpal = 0
+    for (let k = 0; k < fillableAreas[i].length; k++) {
+      for (let j = 0; j < fillableAreas[i][k].length; j++) {
+        if (!fillableAreas[i][k][j]) continue
+        let x = fillableAreas[i][k][j][0]
+        let y = fillableAreas[i][k][j][1]      
+        const l = (y * width + x) * 4
+        if (k % 4 === 1 || k % 4 === 2) {
+          data[l]     = altcolor.r
+          data[l + 1] = altcolor.g
+          data[l + 2] = altcolor.b
+          data[l + 3] = 255
+        } else {
+          data[l]     = usecolor.r
+          data[l + 1] = usecolor.g
+          data[l + 2] = usecolor.b
+          data[l + 3] = 255
+        }
+      }
+    }
+  }  
+}
+
 // wire up sliders and buttons
 
 document.getElementById("loadButton").addEventListener("click", load)
 document.getElementById("randButton").addEventListener("click", randomDraw)
+document.getElementById("autofill").addEventListener("click", autofill)
 
 sliderValueDisplay.textContent = 4
 
