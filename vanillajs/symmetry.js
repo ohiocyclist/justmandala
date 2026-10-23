@@ -1,5 +1,6 @@
 var canvas = document.getElementById("drawCanvas");
 
+const notan = false
 var getcanvas, ctx, prevX, prevY
 let symmetry = canvas.width
 let xCenter = symmetry / 2
@@ -172,8 +173,8 @@ function getAdjacentWhite(data, startX, startY, width, height, blackfun) {
       const r = data[i], g = data[i + 1], b = data[i + 2]
 
       if (blackfun) {
-        // if (r < 240 && g < 240 && b < 240) console.log(r, g, b)
-        if (r === 0 && g === 0 && b === 0 ) continue
+        if (r < 240 || g < 240 || b < 240) continue
+        //if (r === 0 && g === 0 && b === 0 ) continue
         //if (Math.abs(x - startX) > 200 || Math.abs(y - startY) > 200) continue
       } else {
         if (!(r === curColorR && g === curColorG && b === curColorB)) continue
@@ -319,7 +320,7 @@ function drop(e) {
   }
 }
 
-function getSymmetryPoints(x, y) {
+function getSymmetryPoints(x, y, domirror=true) {
   // The coordinate system has its origin at the center of the canvas,
   // has up as 0 degrees, right as 90 deg, down as 180 deg, and left as 270 deg.
   var ctrX = symmetry / 2;
@@ -330,20 +331,26 @@ function getSymmetryPoints(x, y) {
   var angle = Math.atan2(relX, relY); // Radians
   var result = [];
   var radian = Number(sliderValueDisplay2.textContent)
+  // push all the originals, then all the mirrors
   for (var i = 0; i < radian; i++) {
     var theta = angle + ((Math.PI * 2) / radian) * i; // Radians
     x = ctrX + Math.sin(theta) * dist;
     y = ctrY - Math.cos(theta) * dist;
     result.push([Math.round(x), Math.round(y)]);
-    // this mirrors the points around the spoke of the symmetry
-    // hence symmetry === 2 is actually 4 etc.
-    // but it allows the user to easily draw closed areas
-    if (true) {
+  }
+  // this mirrors the points around the spoke of the symmetry
+  // hence symmetry === 2 is actually 4 etc.
+  // but it allows the user to easily draw closed areas
+  for (var i = 0; i < radian; i++) {
+    var theta = angle + ((Math.PI * 2) / radian) * i; // Radians
+    y = ctrY - Math.cos(theta) * dist;
+    if (domirror) {
       x = ctrX - Math.sin(theta) * dist;
       result.push([Math.round(x), Math.round(y)]);
     }
   }
 
+  //console.log(result)
   return result;
 }
 
@@ -438,7 +445,37 @@ function randomDraw() {
   ctx.lineWidth = Number(sliderValueDisplay.textContent)
   // five styles of random mandala
   const randval = Math.random()
-  if (randval < 0.17) {
+  if (randval < 0.04) {
+    // interlocking circles style
+    let arcrad = 100
+    ctx.moveTo(xCenter + arcrad, xCenter)
+    ctx.arc(xCenter, xCenter, arcrad, 0, Math.PI * 2)
+    ctx.stroke()
+    let aroundfactor = 6
+    // draw the circles within the zone
+    for (let i = 0; i < aroundfactor; i++) {
+      for (let j = 1; j < 4; j++) {
+        for (let k = 0; k < aroundfactor; k++) {
+          let x = Math.cos(i * Math.PI * 2 / aroundfactor) * arcrad * j + Math.cos(k * Math.PI * 2 / aroundfactor) * arcrad + xCenter
+          let y = Math.sin(i * Math.PI * 2 / aroundfactor) * arcrad * j + Math.sin(k * Math.PI * 2 / aroundfactor) * arcrad + xCenter
+          ctx.moveTo(x + arcrad, y)
+          ctx.arc(x, y, arcrad, 0, Math.PI * 2)
+          ctx.stroke()      
+        }
+      }
+      // draw the breaks between the zones
+      let x = Math.cos(i * Math.PI * 2 / aroundfactor) * xCenter + xCenter
+      let y = Math.sin(i * Math.PI * 2 / aroundfactor) * xCenter + xCenter
+      ctx.moveTo(xCenter, xCenter)
+      ctx.lineTo(x, y)
+      ctx.stroke()
+      x = Math.cos((i + 1/2) * Math.PI * 2 / aroundfactor) * 3.5 / 5 * xCenter + xCenter
+      y = Math.sin((i + 1/2) * Math.PI * 2 / aroundfactor) * 3.5 / 5 * xCenter + xCenter
+      ctx.moveTo(xCenter, xCenter)
+      ctx.lineTo(x, y)
+      ctx.stroke()
+    }
+  } else if (randval < 0.17) {
     // geometric forms style
     for (i = -10; i < xCenter - 150; i += 52) {
       // skew y for the broader spectrum
@@ -688,7 +725,7 @@ function getFillableAreas(width, slider1, bgdata, fillableAreas) {
       x = Math.round(total[0] / startcoords.length)
       y = Math.round(total[1] / startcoords.length)
       const symmetricPoints = []
-      let presymmetricPoints = getSymmetryPoints(x, y)
+      let presymmetricPoints = getSymmetryPoints(x, y, false)
       for (let [xx, yy] of presymmetricPoints) {
         if (!seen.has([xx, yy].join(','))) symmetricPoints.push([xx, yy])
         seen.add([xx, yy].join(','))
@@ -757,10 +794,24 @@ function stepThroughFillables(img2, fillableAreas, palArr, width) {
   // in color stepping order (of palArr)
   const data = img2.data
   let palLocn = 0
-  let altpal = 1
+  let altpal = 5
   for (let i = 0; i < fillableAreas.length; i++) {
     let usecolor = hexToRgb(palArr[palLocn][1])
+    // sub out black
+    if (usecolor.r === 0 && usecolor.g === 0 && usecolor.b === 0) {
+      usecolor.r = 120
+      usecolor.b = 160
+    }
     let altcolor = hexToRgb(palArr[altpal][1])
+    if (altcolor.r === 0 && altcolor.g === 0 && altcolor.b === 0) {
+      altcolor.r = 120
+      altcolor.b = 160
+    }
+    // Notan style
+    if (notan) {
+      usecolor = {r: 255, g: 255, b: 255}
+      altcolor = {r: 0, g: 0, b: 0}
+    }
     palLocn = palLocn + 1
     altpal = altpal + 1
     // -1 -- don't use white as an autofill color
@@ -772,7 +823,10 @@ function stepThroughFillables(img2, fillableAreas, palArr, width) {
         let x = fillableAreas[i][k][j][0]
         let y = fillableAreas[i][k][j][1]      
         const l = (y * width + x) * 4
-        if (k % 4 === 1 || k % 4 === 2) {
+        // (k % 4 === 1 || k % 4 === 2)
+        if ((!notan && slider2.value % 2 == 0 && k % 2 === 1) || (notan && ((i % 2 === 0 && k % 2 === 0) ||
+        (i % 2 === 1 && k % 2 === 1)))) {
+        //if (k > Math.floor(fillableAreas[i].length / 2)) {
           data[l]     = altcolor.r
           data[l + 1] = altcolor.g
           data[l + 2] = altcolor.b
