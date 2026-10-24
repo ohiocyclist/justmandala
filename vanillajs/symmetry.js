@@ -163,21 +163,17 @@ function getAdjacentWhite(data, startX, startY, width, height, blackfun) {
       const y = stack[--sp]
       const x = stack[--sp]
 
-      if (x < 0 || y < 0 || x >= width || y >= height) continue
-
       const idx = y * width + x
       if (visited[idx]) continue
       visited[idx] = 1
 
+      if (x < 0 || y < 0 || x >= width || y >= height) continue
+
       const i = idx * 4
       const r = data[i], g = data[i + 1], b = data[i + 2]
 
-      if (blackfun) {
-        if (r < 240 || g < 240 || b < 240) continue
-        //if (r === 0 && g === 0 && b === 0 ) continue
-        //if (Math.abs(x - startX) > 200 || Math.abs(y - startY) > 200) continue
-      } else {
-        if (!(r === curColorR && g === curColorG && b === curColorB)) continue
+      if ((blackfun && (r < 240 || g < 240 || b < 240)) || (!blackfun && !(r === curColorR && g === curColorG && b === curColorB))) {
+        continue
       }
 
       result.push([x, y])
@@ -303,6 +299,13 @@ function colorUpdate(data, doupdate) {
     bslider.value = data[2]
     bsliderValueDisplay.textContent = data[2]
   }
+  // update for the autofill
+  for (let i = 0; i < colorlist.length; i++) {
+    if (colorlist[i][0] === 'flex') {
+      colorlist[i][1] = rgbToHex(data[0], data[1], data[2])
+      break
+    }
+  }
   document.getElementById("flex").addEventListener("click", () => {
     color = rgbToHex(data[0], data[1], data[2])
     curclicked = "flex"
@@ -341,10 +344,10 @@ function getSymmetryPoints(x, y, domirror=true) {
   // this mirrors the points around the spoke of the symmetry
   // hence symmetry === 2 is actually 4 etc.
   // but it allows the user to easily draw closed areas
-  for (var i = 0; i < radian; i++) {
-    var theta = angle + ((Math.PI * 2) / radian) * i; // Radians
-    y = ctrY - Math.cos(theta) * dist;
-    if (domirror) {
+  if (domirror) {
+    for (var i = 0; i < radian; i++) {
+      var theta = angle + ((Math.PI * 2) / radian) * i; // Radians
+      y = ctrY - Math.cos(theta) * dist;
       x = ctrX - Math.sin(theta) * dist;
       result.push([Math.round(x), Math.round(y)]);
     }
@@ -707,8 +710,19 @@ function getFillableAreas(width, slider1, bgdata, fillableAreas) {
   const igdata = bgdata.slice()
   if (wideFactor < 5) wideFactor = 5
   const seen = new Set()
+  const start = performance.now()
+  let timeup = performance.now() - start
+  let timeone = 0
+  let timetwo = 0
   for (let prex = 0; prex < wideFactor; prex++) {
     for (let prey = 0; prey < width / 2; prey++) {
+      const loopstart = performance.now()
+      // reflect a little that we're working a triangle
+      // but if we cut too many pixels out, we leave unfilled areas
+      if (prey > width / 32 && prey < width / 8 && (prex < 1 * wideFactor / 8 || prex > 7 * wideFactor / 8)) continue
+      if (prey >= width / 8 && prey < 3 * width / 16 && (prex < 1 * wideFactor / 4 || prex > 3 * wideFactor / 4)) continue
+      // more space at the edges
+      if (prey > 3 * width / 8 && prex % 4 === 3) continue
       // work outward from the center (for order of color purposes)
       // we skip some pixels for speed; that can miss areas sometimes if they're very small
       let x = prex % 2 === 0 ? Math.abs(width / 2 - prex) : width / 2 + prex
@@ -721,9 +735,29 @@ function getFillableAreas(width, slider1, bgdata, fillableAreas) {
       // get the center of area first
       blackfun = true
       let startcoords = getAdjacentWhite(igdata, x, y, width, width, blackfun)
+      if (startcoords.length < 1) continue
       let total = startcoords.reduce((acc, curr) => {return [acc[0] + curr[0], acc[1] + curr[1]]}, [0, 0])
       x = Math.round(total[0] / startcoords.length)
       y = Math.round(total[1] / startcoords.length)
+      // let's try a guaranteed point towards the middleish
+      // in pathological conditions with the above algo, x,y can be outside the actual list of coordinates
+      timeone = timeone + performance.now() - loopstart
+      const loopprog = performance.now()
+      if (!JSON.stringify(startcoords).includes(JSON.stringify([x,y]))) {
+        startcoordssort = startcoords.sort((a, b) => {
+          const [aS, bS] = [a[0], b[0]]
+
+          if (aS[0] !== bS[0]) {
+            return aS[0] - bS[0]
+          }
+
+          return aS[1] - bS[1]
+        })
+        const picmid = Math.floor(startcoordssort.length / 2)
+        //console.log(picmid, startcoords.length, startcoordssort.length)
+        x = startcoordssort[picmid][0]
+        y = startcoordssort[picmid][1]
+      }
       const symmetricPoints = []
       let presymmetricPoints = getSymmetryPoints(x, y, false)
       for (let [xx, yy] of presymmetricPoints) {
@@ -733,34 +767,25 @@ function getFillableAreas(width, slider1, bgdata, fillableAreas) {
       for (let coord of startcoords) {
         seen.add(coord.join(','))
       }
-      const thisArea = []
       let emptyCounter = 0
+      timetwo = timetwo + performance.now() - loopprog
       // capture the center
-      if ((prex === 0 && prey === 0) || symmetricPoints.length >= Math.floor(slider1)) {
-        let alwayswhite = false
+      const centerstart = performance.now()
+      if ((prex === 0 && prey === 0) || true || symmetricPoints.length >= Math.floor(slider1)) {
+        let thisArea = []
         for (let [xx, yy] of symmetricPoints) {
           xx = Math.round(xx)
           yy = Math.round(yy)
           let i = (yy * width + xx) * 4
           // only fill white pixel areas
           let canWhite = isWhite({r: bgdata[i], g: bgdata[i + 1], b: bgdata[i + 2], a: 255})
-          if (!canWhite) {
-            i = i - 8
-            xx = xx - 2
-            canWhite = isWhite({r: bgdata[i], g: bgdata[i + 1], b: bgdata[i + 2], a: 255})
-            if (!canWhite) {
-              i = i + 24
-              xx = xx + 6
-              canWhite = isWhite({r: bgdata[i], g: bgdata[i + 1], b: bgdata[i + 2], a: 255})
-            }
-          }
-          if (alwayswhite || canWhite) {
-            alwayswhite = false
+          if (canWhite) {
             emptyCounter += 1
             let allcoords = getAdjacentWhite(bgdata, xx, yy, width, width, false)
             if (allcoords.length > 0) {
               let exclusion = false
               for (const [x, y] of allcoords) {
+                //seen.add([x, y].join(','))
                 // don't use the edge areas
                 if ((x === 0 && (y === 0 || y === width - 1)) || (x === width - 1 && (y === 0 || y === width - 1))) {
                   exclusion = true
@@ -775,18 +800,30 @@ function getFillableAreas(width, slider1, bgdata, fillableAreas) {
               if (!exclusion) {
                 // this does the actual filling (pass by reference)
                 thisArea.push(allcoords)
+                if (notan && thisArea.length >= slider1) {
+                  fillableAreas.push(thisArea)
+                  thisArea = []
+                }
               }
             }
           } else {
             //console.log(`not white pixel ${xx} ${yy}`)
           }
         }
-        if ((prex === 0 && prey === 0) || emptyCounter >= Math.floor(slider1 / 2)) {
+        if (true || (prex === 0 && prey === 0) || emptyCounter >= Math.floor(slider1 / 2)) {
           fillableAreas.push(thisArea)
         }
       }
+      let littledelta = performance.now() - centerstart
+      timeup = timeup + littledelta
     }
   }
+  /*
+  console.log("outer time", performance.now() - start)
+  console.log("one time", timeone)
+  console.log("two time", timetwo)
+  console.log("inner time", timeup)
+  */
 }
 
 function stepThroughFillables(img2, fillableAreas, palArr, width) {
@@ -824,8 +861,9 @@ function stepThroughFillables(img2, fillableAreas, palArr, width) {
         let y = fillableAreas[i][k][j][1]      
         const l = (y * width + x) * 4
         // (k % 4 === 1 || k % 4 === 2)
-        if ((!notan && slider2.value % 2 == 0 && k % 2 === 1) || (notan && ((i % 2 === 0 && k % 2 === 0) ||
-        (i % 2 === 1 && k % 2 === 1)))) {
+        if ((!notan && slider2.value % 2 == 0 && k % 2 === 1) || (notan && ((i % 2 === 0)))) {
+        // if ((!notan && slider2.value % 2 == 0 && k % 2 === 1) || (notan && ((i % 2 === 0 && k % 2 === 0) ||
+        // (i % 2 === 1 && k % 2 === 1)))) {
         //if (k > Math.floor(fillableAreas[i].length / 2)) {
           data[l]     = altcolor.r
           data[l + 1] = altcolor.g
@@ -842,11 +880,40 @@ function stepThroughFillables(img2, fillableAreas, palArr, width) {
   }  
 }
 
+function notanfun() {
+  const img = ctx.getImageData(0, 0, symmetry, symmetry)
+  const data = img.data
+  // sweep over all the data
+  for (i = 0; i <= xCenter; i++) {
+    for (j = 0; j < symmetry; j++) {
+      const idx = ((xCenter - i) + symmetry * j) * 4
+      const midx = ((xCenter + i) + symmetry * j) * 4
+      let r = data[idx]
+      let g = data[idx + 1]
+      let b = data[idx + 2]
+      let gray = (0.5 * r + 1.1 * g + 0.4 * b) / 2
+      if (gray < 128) {
+        gray = 0
+      } else {
+        gray = 255
+      }
+      data[idx] = gray
+      data[idx + 1] = gray
+      data[idx + 2] = gray
+      data[midx] = 255 - gray
+      data[midx + 1] = 255 - gray
+      data[midx + 2] = 255 - gray
+    }
+  }
+  ctx.putImageData(img, 0, 0)
+}
+
 // wire up sliders and buttons
 
 document.getElementById("loadButton").addEventListener("click", load)
 document.getElementById("randButton").addEventListener("click", randomDraw)
 document.getElementById("autofill").addEventListener("click", autofill)
+document.getElementById("notan").addEventListener("click", notanfun)
 
 sliderValueDisplay.textContent = 4
 
