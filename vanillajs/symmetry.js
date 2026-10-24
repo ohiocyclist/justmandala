@@ -145,25 +145,38 @@ function isWhite({ r, g, b, a }) {
 
 function getAdjacentWhite(data, startX, startY, width, height, blackfun) {
     // determine what area we are filling in
-    const stack = new Int32Array(width * height * 2)
+    const maxsize = width * height * 4
+    const stack = new Int16Array(maxsize)
     let sp = 0
 
     stack[sp++] = startX
     stack[sp++] = startY
 
     const visited = new Uint8Array(width * height)
-    const result = []
+    let result = new Int16Array(width * height * 2)
+    let index = 0
 
     let i = (startY * width + startX) * 4
     let curColorR = data[i]
     let curColorG = data[i + 1]
     let curColorB = data[i + 2]
 
-    while (sp > 0) {
+    // this needs to be 2 because it will decrement twice, which would drive it under zero
+    while (sp > 1) {
+      if (sp > maxsize) {
+        console.error('getadjacentwhite: stack grew larger than the max')
+        sp = maxsize - 2
+      }
       const y = stack[--sp]
+      // ut-oh
+      if (y === undefined) {
+        console.error('getadjacentwhite: y is not defined, startX and startY and stack pointer and index were: ', startX, startY, sp, index)
+        result = result.slice(0, index)
+        return [result, index]
+      }
       const x = stack[--sp]
 
-      const idx = y * width + x
+      let idx = y * width + x
       if (visited[idx]) continue
       visited[idx] = 1
 
@@ -176,14 +189,16 @@ function getAdjacentWhite(data, startX, startY, width, height, blackfun) {
         continue
       }
 
-      result.push([x, y])
+      result[index++] = x
+      result[index++] = y
 
       stack[sp++] = x + 1; stack[sp++] = y
       stack[sp++] = x - 1; stack[sp++] = y
       stack[sp++] = x;     stack[sp++] = y + 1
       stack[sp++] = x;     stack[sp++] = y - 1
     }
-    return result
+    result = result.slice(0, index)
+    return [result, index]
 }
 
 function hexToRgb(hex) {
@@ -215,7 +230,7 @@ function fill(e) {
     var y = Math.floor(coord[1])
     let img = ctx.getImageData(0, 0, symmetry, symmetry)
     let data = img.data
-    let allcoords = getAdjacentWhite(data, x, y, symmetry, symmetry, false)
+    let [allcoords, alllength] = getAdjacentWhite(data, x, y, symmetry, symmetry, false)
     const pimg = ctx.getImageData(x, y, 1, 1)
     const da = pimg.data    
     const refr = da[0]
@@ -223,9 +238,9 @@ function fill(e) {
     const refb = da[2]
     let symmetricPoints = []
     // help target small areas
-    if (allcoords.length < 200) {
-      for (let i = 0; i < allcoords.length; i += 4) {
-        let thispoints = getSymmetryPoints(allcoords[i][0], allcoords[i][1])
+    if (alllength < 800) {
+      for (let i = 0; i < Math.min(alllength, 200); i += 8) {
+        let thispoints = getSymmetryPoints(allcoords[i], allcoords[i + 1])
         symmetricPoints = [...symmetricPoints, ...thispoints]
       }
     } else {
@@ -247,9 +262,11 @@ function fill(e) {
           continue
         }
         idx = idx + 1
-        let allcoords = getAdjacentWhite(data, Math.floor(prex), Math.floor(prey), symmetry, symmetry, false)
+        let [allcoords, alllength] = getAdjacentWhite(data, Math.floor(prex), Math.floor(prey), symmetry, symmetry, false)
         
-        for (const [x, y] of allcoords) {
+        for (let k = 0; k < alllength; k++) {
+          x = allcoords[k]
+          y = allcoords[k + 1]
           const i = (y * symmetry + x) * 4
           data[i]     = usecolor.r
           data[i + 1] = usecolor.g
@@ -714,8 +731,23 @@ function getFillableAreas(width, slider1, bgdata, fillableAreas) {
   let timeup = performance.now() - start
   let timeone = 0
   let timetwo = 0
+  // pre-sweep for big empty areas
+  let sweepy = 0
+  for (sweepy = 0; sweepy < xCenter; sweepy++) {
+    let doublebreak = false
+    for (let sweepx = 0; sweepx < width; sweepx++) {
+      idx = (sweepx + width * sweepy) * 4
+      if (bgdata[idx] < 240 && bgdata[idx + 1] < 240 && bgdata[idx + 2] < 240) {
+        doublebreak = true
+        break
+      }
+    }
+    if (doublebreak) {
+      break
+    }
+  }
   for (let prex = 0; prex < wideFactor; prex++) {
-    for (let prey = 0; prey < width / 2; prey++) {
+    for (let prey = 0; prey < width / 2 - sweepy; prey++) {
       const loopstart = performance.now()
       // reflect a little that we're working a triangle
       // but if we cut too many pixels out, we leave unfilled areas
@@ -734,17 +766,38 @@ function getFillableAreas(width, slider1, bgdata, fillableAreas) {
       // don't revisit seen points
       // get the center of area first
       blackfun = true
-      let startcoords = getAdjacentWhite(igdata, x, y, width, width, blackfun)
-      if (startcoords.length < 1) continue
-      let total = startcoords.reduce((acc, curr) => {return [acc[0] + curr[0], acc[1] + curr[1]]}, [0, 0])
-      x = Math.round(total[0] / startcoords.length)
-      y = Math.round(total[1] / startcoords.length)
+      let [startcoords, startlength] = getAdjacentWhite(igdata, x, y, width, width, blackfun)
+      if (startlength < 3) continue
+      let tempset = new Set()
+      for (let k = 0; k < startlength; k += 2) {
+        tempset.add([startcoords[k], startcoords[k + 1]].join(','))
+      }
+      /*
+      let total = startcoords.reduce((acc, curr, index) => {
+        if (index % 2 === 0) {
+          acc[0] += curr
+        } else {
+          acc[1] += curr
+        }
+        return acc
+      }, [0, 0])
+      */
+      let total = [...tempset].reduce((acc, curr) => {
+        let mycurr = curr.split(',')
+        acc[0] += Number(mycurr[0])
+        acc[1] += Number(mycurr[1])
+        return acc
+      }, [0, 0])
+      // * 2 -- the new way startlength holds data, one for x, one for y, instead of counting pairs
+      x = Math.round(total[0] * 2 / startlength)
+      y = Math.round(total[1] * 2 / startlength)
       // let's try a guaranteed point towards the middleish
       // in pathological conditions with the above algo, x,y can be outside the actual list of coordinates
       timeone = timeone + performance.now() - loopstart
       const loopprog = performance.now()
-      if (!JSON.stringify(startcoords).includes(JSON.stringify([x,y]))) {
-        startcoordssort = startcoords.sort((a, b) => {
+      if (!tempset.has([x,y].join(','))) {
+        startcoordssort = [...tempset].sort(
+          /*(a, b) => {
           const [aS, bS] = [a[0], b[0]]
 
           if (aS[0] !== bS[0]) {
@@ -752,9 +805,9 @@ function getFillableAreas(width, slider1, bgdata, fillableAreas) {
           }
 
           return aS[1] - bS[1]
-        })
+        }*/
+        ).map((x) => {splitty = x.split(','); return [Number(splitty[0]), Number(splitty[1])]})
         const picmid = Math.floor(startcoordssort.length / 2)
-        //console.log(picmid, startcoords.length, startcoordssort.length)
         x = startcoordssort[picmid][0]
         y = startcoordssort[picmid][1]
       }
@@ -764,8 +817,8 @@ function getFillableAreas(width, slider1, bgdata, fillableAreas) {
         if (!seen.has([xx, yy].join(','))) symmetricPoints.push([xx, yy])
         seen.add([xx, yy].join(','))
       }
-      for (let coord of startcoords) {
-        seen.add(coord.join(','))
+      for (x of tempset) {
+        seen.add(x)
       }
       let emptyCounter = 0
       timetwo = timetwo + performance.now() - loopprog
@@ -781,11 +834,15 @@ function getFillableAreas(width, slider1, bgdata, fillableAreas) {
           let canWhite = isWhite({r: bgdata[i], g: bgdata[i + 1], b: bgdata[i + 2], a: 255})
           if (canWhite) {
             emptyCounter += 1
-            let allcoords = getAdjacentWhite(bgdata, xx, yy, width, width, false)
-            if (allcoords.length > 0) {
+            let [allcoords, alllength] = getAdjacentWhite(bgdata, xx, yy, width, width, false)
+            if (alllength > 0) {
               let exclusion = false
-              for (const [x, y] of allcoords) {
-                //seen.add([x, y].join(','))
+              for (let k = 0; k < allcoords.length; k += 2) {
+                let x = allcoords[k]
+                let y = allcoords[k + 1]
+                let blockthesetoo = [x, y].join(',')
+                //if (blockthesetoo === '1,1') console.log('blocking 1,1')
+                seen.add(blockthesetoo)
                 // don't use the edge areas
                 if ((x === 0 && (y === 0 || y === width - 1)) || (x === width - 1 && (y === 0 || y === width - 1))) {
                   exclusion = true
@@ -855,10 +912,10 @@ function stepThroughFillables(img2, fillableAreas, palArr, width) {
     if (palLocn >= palArr.length - 1) palLocn = 0
     if (altpal >= palArr.length - 1) altpal = 0
     for (let k = 0; k < fillableAreas[i].length; k++) {
-      for (let j = 0; j < fillableAreas[i][k].length; j++) {
+      for (let j = 0; j < fillableAreas[i][k].length; j += 2) {
         if (!fillableAreas[i][k][j]) continue
-        let x = fillableAreas[i][k][j][0]
-        let y = fillableAreas[i][k][j][1]      
+        let x = fillableAreas[i][k][j]
+        let y = fillableAreas[i][k][j + 1]      
         const l = (y * width + x) * 4
         // (k % 4 === 1 || k % 4 === 2)
         if ((!notan && slider2.value % 2 == 0 && k % 2 === 1) || (notan && ((i % 2 === 0)))) {
