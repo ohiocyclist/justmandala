@@ -1,6 +1,7 @@
 var canvas = document.getElementById("drawCanvas");
 
 const notan = false
+const fillablesStyle = 1
 var getcanvas, ctx, prevX, prevY
 let symmetry = canvas.width
 let xCenter = symmetry / 2
@@ -238,7 +239,7 @@ function fill(e) {
     const refb = da[2]
     let symmetricPoints = []
     // help target small areas
-    if (alllength < 800) {
+    if (alllength < 800 && fillorOther !== 'one') {
       for (let i = 0; i < Math.min(alllength, 200); i += 8) {
         let thispoints = getSymmetryPoints(allcoords[i], allcoords[i + 1])
         symmetricPoints = [...symmetricPoints, ...thispoints]
@@ -257,14 +258,15 @@ function fill(e) {
       let complocn = Math.floor((prey * symmetry + prex) * 4)
       if (data[complocn] === refr && data[complocn + 1] === refg && data[complocn + 2] === refb) {
         // there tend to be two mirrors in one white zone, necessitating division by 4 to hit every other white zone
-        if (idx % 4 != 0 && fillOrOther === 'other') {
+        if (idx % 2 != 0 && fillOrOther === 'other') {
           idx = idx + 1
           continue
         }
+        if (idx >= Math.floor(symmetricPoints.length / 2) && fillOrOther === 'other') continue
         idx = idx + 1
         let [allcoords, alllength] = getAdjacentWhite(data, Math.floor(prex), Math.floor(prey), symmetry, symmetry, false)
         
-        for (let k = 0; k < alllength; k++) {
+        for (let k = 0; k < alllength; k += 2) {
           x = allcoords[k]
           y = allcoords[k + 1]
           const i = (y * symmetry + x) * 4
@@ -273,6 +275,9 @@ function fill(e) {
           data[i + 2] = usecolor.b
           data[i + 3] = 255
         }
+      } else {
+        // need to preserve location for every-other
+        idx = idx + 1
       }
     }
     
@@ -343,8 +348,8 @@ function drop(e) {
 function getSymmetryPoints(x, y, domirror=true) {
   // The coordinate system has its origin at the center of the canvas,
   // has up as 0 degrees, right as 90 deg, down as 180 deg, and left as 270 deg.
-  var ctrX = symmetry / 2;
-  var ctrY = symmetry / 2;
+  var ctrX = Math.floor(symmetry / 2);
+  var ctrY = Math.floor(symmetry / 2);
   var relX = x - ctrX;
   var relY = ctrY - y;
   var dist = Math.hypot(relX, relY);
@@ -409,6 +414,50 @@ function euclidDistance(x, y, w, z) {
   return Math.sqrt(Math.pow((x - w), 2) + Math.pow((y - z), 2))
 }
 
+function randomMandala(cx, cy, radius, mirrorFactor) {
+    // this function provided by Microsoft Copilot
+    let points = [];
+    let count = 5 + Math.floor(Math.random() * 6);
+
+    // Generate a random stroke in one wedge
+    for (let i = 0; i < count; i++) {
+        points.push({
+            x: Math.random() * radius,
+            y: (Math.random() - 0.6) * radius * 0.5
+        });
+    }
+
+    // Mirror around center
+    // We don't need to draw all the mirrors, Copilot didn't
+    // understand that the rest of the code takes care of that
+    for (let m = 0; m <= 0; m++) { //m < mirrorFactor; m++) {
+        let a = (Math.PI * 2 * m) / mirrorFactor;
+        let cosA = Math.cos(a);
+        let sinA = Math.sin(a);
+
+        for (let i = 0; i < points.length - 1; i++) {
+            let p1 = points[i];
+            let p2 = points[i + 1];
+
+            let x1 = cx + p1.x * cosA - p1.y * sinA;
+            let y1 = cy + p1.x * sinA + p1.y * cosA;
+
+            let x2 = cx + p2.x * cosA - p2.y * sinA;
+            let y2 = cy + p2.x * sinA + p2.y * cosA;
+
+            drawLine(x1, y1, x2, y2);
+
+            // Optional reflection for denser mandalas
+            drawLine(
+                cx + p1.x * cosA + p1.y * sinA,
+                cy + p1.x * sinA - p1.y * cosA,
+                cx + p2.x * cosA + p2.y * sinA,
+                cy + p2.x * sinA - p2.y * cosA
+            );
+        }
+    }
+}
+
 function voronoiTrace(pointList) {
   // trace out the points that are equidistant from the roots
   let previ = 0
@@ -460,13 +509,36 @@ function voronoiTrace(pointList) {
   }
 }
 
+const fileInput = document.getElementById('fileInput')
+
+fileInput.addEventListener('change', function(event) {
+  const selectedFile = event.target.files[0]
+
+  if (selectedFile) {
+    const reader = new FileReader()
+    
+    reader.onload = (e) => {
+      const img = new Image()
+      img.src = e.target.result
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, symmetry, symmetry)    
+      }      
+    }
+    reader.readAsDataURL(selectedFile)
+  }
+})
+
 function randomDraw() {
   ctx.strokeStyle = color
   ctx.lineWidth = Number(sliderValueDisplay.textContent)
   // five styles of random mandala
   const randval = Math.random()
-  if (randval < 0.04) {
+  if (randval < 0.12) {
+    console.log("copilot style")
+    randomMandala(xCenter, xCenter, xCenter, slider2.value)
+  } else if (randval < 0.24) {
     // interlocking circles style
+    console.log("circles style")
     let arcrad = 100
     ctx.moveTo(xCenter + arcrad, xCenter)
     ctx.arc(xCenter, xCenter, arcrad, 0, Math.PI * 2)
@@ -495,8 +567,9 @@ function randomDraw() {
       ctx.lineTo(x, y)
       ctx.stroke()
     }
-  } else if (randval < 0.17) {
+  } else if (randval < 0.36) {
     // geometric forms style
+    console.log("geo forms")
     for (i = -10; i < xCenter - 150; i += 52) {
       // skew y for the broader spectrum
       let jend = 0
@@ -536,7 +609,8 @@ function randomDraw() {
         }
       }
     }
-  } else if (randval < 0.34) {
+  } else if (randval < 0.48) {
+    console.log("voronoi")
     // Voronoi style
     let startPoints = [
         [xCenter + 0 - 100 * Math.random(), xCenter + 0 + 100 * Math.random()], 
@@ -578,7 +652,8 @@ function randomDraw() {
         }
     }
     voronoiTrace(startPoints)
-  } else if (randval < 0.51) {
+  } else if (randval < 0.6) {
+    console.log("spiral")
     // spiral style
     ctx.strokeStyle = color
     let endx = xCenter
@@ -622,7 +697,8 @@ function randomDraw() {
       endx = startx
       endy = starty
     }
-  } else if (randval < 0.68) {
+  } else if (randval < 0.72) {
+    console.log("straight lines")
     // just a bunch of straight lines style
     ctx.strokeStyle = color
     let offset = 40 * Math.random()
@@ -642,6 +718,7 @@ function randomDraw() {
       drawLine(startx, starty, startx + offset, Math.abs(symmetry - starty))
     }
   } else if (randval < 0.84) {
+    console.log("interlocking crossing lines")
     // interlocking crossing lines style
     let workfactor = 12
     let ifactor = 2
@@ -670,6 +747,7 @@ function randomDraw() {
       drawLine(startx, starty, endx, endy)
     }
   } else {
+    console.log("edge to center push")
     // push from the edge to the center style
     let yLocn = 20
     let xLocn = xCenter
@@ -712,11 +790,401 @@ function autofill() {
   const fillableAreas = []
   const img = ctx.getImageData(0, 0, symmetry, symmetry)
   const bgdata = img.data
-  getFillableAreas(symmetry, slider2.value, bgdata, fillableAreas)
+  if (fillablesStyle === 2) {
+    getFillableAreas(symmetry, slider2.value, bgdata, fillableAreas)
+  } else {
+    getAllFillable(symmetry, slider2.value, bgdata, fillableAreas)
+  }
   // then step through fillable areas
   const img2 = ctx.getImageData(0, 0, symmetry, symmetry)
   stepThroughFillables(img2, fillableAreas, colorlist, symmetry)
   ctx.putImageData(img2, 0, 0)
+}
+
+function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
+  let areaNumber = 0
+  let areaMap = new Int16Array(width * width)
+  let output = {}
+  let wideFactor = Math.floor((width / 2 - 20) * Math.PI / Number(slider1) * 2.2)
+  let xMin = Math.floor(width / 2 - wideFactor)
+  let xMax = Math.round(width / 2 + wideFactor)
+  for (let y = 0; y < width; y++) {
+    for (let x = width - 1; x >= 0; x--) {
+      let idx = x + y * width
+      let bdx = idx * 4
+      let prevNumber = 0
+      // skip forward past non-white areas
+      let whiteconditional = (bdx) => bgdata[bdx] < 215 || bgdata[bdx + 1] < 215 || bgdata[bdx + 2] < 215
+      if (whiteconditional(bdx)) {
+        areaMap[idx] = 0
+        continue
+      }
+      // get the previous correct color
+      if (x > 0 && areaMap[idx - 1] > 0) {
+        prevNumber = areaMap[idx - 1]
+      }
+      if (y > 0 && areaMap[idx - width] > 0) {
+        prevNumber = areaMap[idx - width]
+      }
+      if (prevNumber === 0) {areaNumber = areaNumber + 1; prevNumber = areaNumber; output[prevNumber] = []}
+      areaMap[idx] = prevNumber
+    }
+  }
+
+  // merge step combo x
+  let prevNumber = 0
+  for (let y = 0; y < width; y++) {
+    for (let x = width - 1; x >= 0; x--) {
+      idx = x + y * width
+      // force to Y merge number if available
+      // step over in x as well
+      let fact = 1
+      if (x === width - fact) fact = 0
+      if (areaMap[idx - width - fact] !== 0 && areaMap[idx - width - fact] != undefined) {
+        prevNumber = areaMap[idx - width - fact]
+      } else if (x < width - 3 && areaMap[idx + 3] !== 0 && areaMap[idx + 3] != undefined) {
+        prevNumber = areaMap[idx + 3]
+      }
+      // now recolor with x or y
+      if (prevNumber !== 0 && areaMap[idx] !== 0) {
+        areaMap[idx] = prevNumber
+        output[prevNumber].push([x, y])
+      } else if (areaMap[idx] !== 0) {
+        if (!output[areaMap[idx]]) output[areaMap[idx]] = []
+        output[areaMap[idx]].push([x, y])
+      }
+      prevNumber = areaMap[idx]
+    }
+  }
+
+  // merge step diagonals
+  equivs = {}
+
+  // 1. Helper function to find the absolute "boss" (root) of any area
+  // This uses path compression, making future lookups near-instant O(1)
+  function findBoss(id, equivs) {
+    let root = id;
+    while (equivs[root]) {
+      root = equivs[root];
+    }
+    
+    // Path compression: point directly to the ultimate boss to speed up next time
+    let current = id;
+    while (current !== root) {
+      let next = equivs[current];
+      equivs[current] = root;
+      current = next;
+    }
+    
+    return root;
+  }
+
+  // 2. Your updated loop structure
+  for (let y = 0; y < width; y++) {
+    for (let x = width - 2; x >= 0; x--) {
+      const idx = x + y * width;
+      
+      const leftArea = areaMap[idx];
+      const rightArea = areaMap[idx + 1];
+      
+      // Only merge if both are valid areas and they aren't already the same literal ID
+      if (leftArea > 0 && rightArea > 0 && leftArea !== rightArea) {
+        
+        // Find the ultimate boss of BOTH stripes
+        const bossLeft = findBoss(leftArea, equivs);
+        const bossRight = findBoss(rightArea, equivs);
+        
+        // If they don't share the same ultimate boss yet, link them!
+        if (bossLeft !== bossRight) {
+          // Make the smaller or larger ID the boss (consistently) to prevent cycles
+          if (bossLeft < bossRight) {
+            equivs[bossRight] = bossLeft;
+          } else {
+            equivs[bossLeft] = bossRight;
+          }
+        }
+      }
+    }
+  }
+
+  const equivBuckets = {}
+
+  for (let j = 1; j <= areaNumber; j++) {
+    // Always resolve to the absolute, ultimate root boss
+    const ultimateBoss = findBoss(j, equivs)
+    
+    // If an area has no matches, it is its own ultimate boss (ultimateBoss === j)
+    // We only want to group things if they actually belong to a multi-area cluster,
+    // or you can group EVERYTHING by its boss. Let's group everything by its ultimate boss:
+    if (equivBuckets[ultimateBoss] === undefined) {
+      equivBuckets[ultimateBoss] = [j]
+    } else {
+      equivBuckets[ultimateBoss].push(j)
+    }
+  }
+
+  // 2. Pre-flatten all output subarrays once—O(N) flat pass
+  const flatOutputs = new Array(areaNumber + 1)
+  for (let i = 1; i <= areaNumber; i++) {
+    const out = output[i]
+    // Check length > 2 before wasting time flattening
+    flatOutputs[i] = (out && out.length > 2) ? out.flat() : null
+  }
+
+  const deads = new Uint8Array(areaNumber + 1) // +1 to safely handle 1-based indexing
+
+  for (let i = 1; i <= areaNumber; i++) {
+    //const currentFlat = flatOutputs[i];
+    const currentFlat = output[i]
+    
+    if (currentFlat && !deads[i]) {
+      // Start the tracking array for this group
+      let combinedFlat = []
+      if (fillablesStyle) {
+        combinedFlat = [...currentFlat.flat()]
+      } else {
+        combinedFlat = [...currentFlat]
+      }
+      
+      if (combinedFlat.length < 2) continue
+            
+      // Look up pre-grouped matches instantly instead of looping over everything
+      const matches = equivBuckets[i];
+      if (matches) {
+        for (let m = 0; m < matches.length; m++) {
+          const j = matches[m];
+          if (!deads[j]) { // Safety check, though usually redundant depending on logic
+            deads[j] = 1;
+            
+            // Flattened data is already prepared; push elements efficiently
+            const matchFlat = flatOutputs[j];
+            if (matchFlat) {
+              let matchout = 0
+              let matchstride = 60000
+              while (matchFlat.length > matchout) {
+                combinedFlat.push(...matchFlat.slice(matchout, Math.min(matchFlat.length, matchout + matchstride)))
+                matchout += matchstride
+              }
+            }
+          }
+        }
+      }
+      
+      // Push using the exact nesting structure from your original code: [[[x1, y1, ...]]]
+
+      // exclusion zone
+      let maxval = 0
+      if (fillablesStyle) {
+        maxval = Math.max(...combinedFlat.slice(0, Math.min(combinedFlat.length, 65500)))
+      } else {
+        maxval = Math.max(...combinedFlat.slice(0, Math.min(combinedFlat.length, 65500)))
+      }
+      if (maxval > width - 2) {
+        continue
+      }
+      
+      if (combinedFlat.length > 2) {
+        realoutputs.push(combinedFlat)
+      }
+    }
+  }
+}
+
+function areaBasedSymmetry(realoutputs, fillableAreas, width) {
+  const everyonespoints = []
+  for (let i = 1; i < realoutputs.length; i++) {
+    if (realoutputs[i] === undefined || realoutputs[i].length < 3) {
+      continue
+    }
+    let tempset = new Set()
+    for (let k = 0; k < realoutputs[i].length; k += 2) {
+      tempset.add([realoutputs[i][k], realoutputs[i][k + 1]].join(','))
+    }
+    let startlength = [...tempset].length
+    let total = [...tempset].reduce((acc, curr) => {
+      let mycurr = curr.split(',')
+      acc[0] += Number(mycurr[0])
+      acc[1] += Number(mycurr[1])
+      return acc
+    }, [0, 0])
+    x = Math.round(total[0] / startlength)
+    y = Math.round(total[1] / startlength)
+    // let's try a guaranteed point towards the middleish
+    // in pathological conditions with the above algo, x,y can be outside the actual list of coordinates
+    const loopprog = performance.now()
+    startcoordssort = [...tempset].sort().map((x) => {splitty = x.split(','); return [Number(splitty[0]), Number(splitty[1])]})
+    // points just flat-out doesn't work.  Better to hope the inner and outer area's centers aren't close.
+    let pstamp = 0
+    if (!tempset.has([x,y].join(','))) {
+      pstamp = [...tempset].length
+      const picmid = Math.floor(startcoordssort.length / 2)
+      //x = startcoordssort[picmid][0]
+      //y = startcoordssort[picmid][1]
+    }
+    while(everyonespoints.length < i + 1) {
+      everyonespoints.push([])
+    }
+    everyonespoints[i] = [x, y, pstamp]
+  }
+
+  usedpoints = {}
+  for (let i = 1; i < realoutputs.length; i++) {    
+    if (usedpoints[i]) continue
+    [x, y] = everyonespoints[i]
+    const symmetricPoints = getSymmetryPoints(x, y, false)
+    thisarea = []
+    for (let j = 1; j < everyonespoints.length; j++) {
+      let mindist = 999999
+      let winnerpick = 0
+      let counterpick = -1
+      if (everyonespoints[j] && !usedpoints[j]) {
+        // get these out in order of symmetricPoints
+        let counter = 0
+        for (let [xx, yy] of symmetricPoints) {
+          xx = Math.round(xx)
+          yy = Math.round(yy)
+          idx = (xx + yy * width)
+          let thisdist = euclidDistance(xx, yy, everyonespoints[j][0], everyonespoints[j][1])
+          // if the number of points is stamped, make sure it's similar
+          // if (everyonespoints[i][2] > 50) console.log('pstamp comparison:', everyonespoints[i][2], everyonespoints[j][2])
+          if (thisdist < mindist && everyonespoints[j][2] > everyonespoints[i][2] - 125 && everyonespoints[j][2] < everyonespoints[i][2] + 125) {
+            mindist = thisdist
+            winnerpick = j
+            counterpick = counter
+          }
+          counter = counter + 1
+        }
+      }
+      //myrad = euclidDistance(symmetricPoints[0][0], symmetricPoints[0][1], xCenter, xCenter)
+      //if (mindist <= myrad / 24) {
+      if (mindist < 4) {
+        //console.log(mindist, everyonespoints[winnerpick], winnerpick)
+        usedpoints[winnerpick] = 1
+        while(thisarea.length < counterpick + 1) {
+          thisarea.push([])
+        }
+        thisarea[counterpick] = realoutputs[winnerpick]
+      }
+    }
+    const actarr = []
+    for (let i = 0; i < thisarea.length; i++) {
+      if (thisarea[i] && thisarea[i][0]) actarr.push(thisarea[i])
+    }
+    fillableAreas.push(actarr)
+  }  
+
+  // check for unfilled areas
+  for(let i = 0; i < realoutputs.length; i++) {
+    if (!usedpoints[i]) {
+      console.log("unfilled area", i, realoutputs[i][0], realoutputs[i][1])
+      // don't color the background
+      if ((realoutputs[i][0] === 0 || realoutputs[i][0] === width - 1) && (realoutputs[i][1] === 0 || realoutputs[i][1] === width - 1)) continue
+      fillableAreas.push([realoutputs[i]])
+    }
+  }
+}
+
+function stackSweepOnAreas(bgdata, realoutputs, fillableAreas, width, slider1) {
+  // do the standard setup
+  let seen = new Set()
+  for (let i = 1; i < realoutputs.length; i++) {
+    if (realoutputs[i] === undefined || realoutputs[i].length < 3) {
+      continue
+    }
+    let tempset = new Set()
+    //for (let k = 0; k < startlength; k += 2) {
+    let startlength = realoutputs[i].length
+    for (let k = 0; k < realoutputs[i].length; k++) {
+      //tempset.add([startcoords[k], startcoords[k + 1]].join(','))
+      tempset.add([realoutputs[i][k][0], realoutputs[i][k][1]].join(','))
+    }
+    let total = [...tempset].reduce((acc, curr) => {
+      let mycurr = curr.split(',')
+      acc[0] += Number(mycurr[0])
+      acc[1] += Number(mycurr[1])
+      return acc
+    }, [0, 0])
+    x = Math.round(total[0]  / startlength)
+    y = Math.round(total[1]  / startlength)
+    // let's try a guaranteed point towards the middleish
+    // in pathological conditions with the above algo, x,y can be outside the actual list of coordinates
+    const loopprog = performance.now()
+    startcoordssort = [...tempset].sort().map((x) => {splitty = x.split(','); return [Number(splitty[0]), Number(splitty[1])]})
+    if (!tempset.has([x,y].join(','))) {
+      const picmid = Math.floor(startcoordssort.length / 2)
+      x = startcoordssort[picmid][0]
+      y = startcoordssort[picmid][1]
+    }
+    const symmetricPoints = []
+    let presymmetricPoints = getSymmetryPoints(x, y, false)
+    for (let [xx, yy] of presymmetricPoints) {
+      xx = Math.round(xx)
+      yy = Math.round(yy)
+      idx = (xx + yy * width)
+      symmetricPoints.push([xx, yy])
+      seen[idx] = 1
+    }
+    for (let val of startcoordssort) {
+      seen[val[0] + width * val[1]] = 1
+    }
+    let thisArea = []
+    for (let [xx, yy] of symmetricPoints) {
+      xx = Math.round(xx)
+      yy = Math.round(yy)
+      let i = (yy * width + xx) * 4
+      // only fill white pixel areas
+      let canWhite = (bgdata[i] > 30 && bgdata[i + 1] > 30 && bgdata[i + 2] > 30)
+      if (canWhite) {
+        let [allcoords, alllength] = getAdjacentWhite(bgdata, xx, yy, width, width, false)
+        if (alllength > 0) {
+          let exclusion = false
+          for (let k = 0; k < allcoords.length; k += 2) {
+            let x = allcoords[k]
+            let y = allcoords[k + 1]
+            seen[x + width * y] = 1
+            // don't use the edge areas
+            if ((x === 0 && (y === 0 || y === width - 1)) || (x === width - 1 && (y === 0 || y === width - 1))) {
+              exclusion = true
+            }
+            // bgdata is just to claim space, so it also claims exclusion areas we won't fill later
+            const j = (y * width + x) * 4
+            bgdata[j]     = 0
+            bgdata[j + 1] = 0
+            bgdata[j + 2] = 0
+            bgdata[j + 3] = 255
+          }
+          if (!exclusion) {
+            // this does the actual filling (pass by reference)
+            thisArea.push(allcoords)
+            if (notan && thisArea.length >= slider1) {
+              fillableAreas.push(thisArea)
+              thisArea = []
+            }
+          }
+        }
+      } else {
+        //console.log(`not white pixel ${xx} ${yy}`)
+      }
+    }
+    if (thisArea.length >= slider1.length / 2) {
+      fillableAreas.push(thisArea)
+    }
+  }
+}
+
+function getAllFillable(width, slider1, bgdata, fillableAreas) {
+  const starttime = performance.now()
+  const realoutputs = []
+  getAllWhiteAreas(bgdata, realoutputs, slider1, width)
+  const midpoint = performance.now()
+  console.log('first half', midpoint - starttime)
+
+  if (fillablesStyle) { 
+    areaBasedSymmetry(realoutputs, fillableAreas, width)
+  } else {
+    stackSweepOnAreas(bgdata, realoutputs, fillableAreas, width, slider1)
+  }
+  console.log('second half', performance.now() - midpoint)
 }
 
 function getFillableAreas(width, slider1, bgdata, fillableAreas) {
@@ -726,11 +1194,12 @@ function getFillableAreas(width, slider1, bgdata, fillableAreas) {
   let wideFactor = (width / 2 - 20) * Math.PI / Number(slider1) * 1.1
   const igdata = bgdata.slice()
   if (wideFactor < 5) wideFactor = 5
-  const seen = new Set()
+  const seen = new Uint8Array(width * width)
   const start = performance.now()
   let timeup = performance.now() - start
   let timeone = 0
   let timetwo = 0
+  let starttime = performance.now()
   // pre-sweep for big empty areas
   let sweepy = 0
   for (sweepy = 0; sweepy < xCenter; sweepy++) {
@@ -759,7 +1228,8 @@ function getFillableAreas(width, slider1, bgdata, fillableAreas) {
       // we skip some pixels for speed; that can miss areas sometimes if they're very small
       let x = prex % 2 === 0 ? Math.abs(width / 2 - prex) : width / 2 + prex
       let y = prey % 2 === 0 ? Math.abs(width / 2 - prey) : width / 2 + prey
-      if (seen.has([x, y].join(','))) {
+      idx = (x + y * width)
+      if (seen[idx]) {
         continue
       }
       // do this in symmetric points order
@@ -795,18 +1265,18 @@ function getFillableAreas(width, slider1, bgdata, fillableAreas) {
       // in pathological conditions with the above algo, x,y can be outside the actual list of coordinates
       timeone = timeone + performance.now() - loopstart
       const loopprog = performance.now()
+      startcoordssort = [...tempset].sort(
+        /*(a, b) => {
+        const [aS, bS] = [a[0], b[0]]
+
+        if (aS[0] !== bS[0]) {
+          return aS[0] - bS[0]
+        }
+
+        return aS[1] - bS[1]
+      }*/
+      ).map((x) => {splitty = x.split(','); return [Number(splitty[0]), Number(splitty[1])]})
       if (!tempset.has([x,y].join(','))) {
-        startcoordssort = [...tempset].sort(
-          /*(a, b) => {
-          const [aS, bS] = [a[0], b[0]]
-
-          if (aS[0] !== bS[0]) {
-            return aS[0] - bS[0]
-          }
-
-          return aS[1] - bS[1]
-        }*/
-        ).map((x) => {splitty = x.split(','); return [Number(splitty[0]), Number(splitty[1])]})
         const picmid = Math.floor(startcoordssort.length / 2)
         x = startcoordssort[picmid][0]
         y = startcoordssort[picmid][1]
@@ -814,11 +1284,12 @@ function getFillableAreas(width, slider1, bgdata, fillableAreas) {
       const symmetricPoints = []
       let presymmetricPoints = getSymmetryPoints(x, y, false)
       for (let [xx, yy] of presymmetricPoints) {
-        if (!seen.has([xx, yy].join(','))) symmetricPoints.push([xx, yy])
-        seen.add([xx, yy].join(','))
+        idx = (xx + yy * width)
+        if (!seen[idx]) symmetricPoints.push([xx, yy])
+        seen[idx] = 1
       }
-      for (x of tempset) {
-        seen.add(x)
+      for (let val of startcoordssort) {
+        seen[val[0] + width * val[1]] = 1
       }
       let emptyCounter = 0
       timetwo = timetwo + performance.now() - loopprog
@@ -840,9 +1311,7 @@ function getFillableAreas(width, slider1, bgdata, fillableAreas) {
               for (let k = 0; k < allcoords.length; k += 2) {
                 let x = allcoords[k]
                 let y = allcoords[k + 1]
-                let blockthesetoo = [x, y].join(',')
-                //if (blockthesetoo === '1,1') console.log('blocking 1,1')
-                seen.add(blockthesetoo)
+                seen[x + width * y] = 1
                 // don't use the edge areas
                 if ((x === 0 && (y === 0 || y === width - 1)) || (x === width - 1 && (y === 0 || y === width - 1))) {
                   exclusion = true
@@ -875,6 +1344,7 @@ function getFillableAreas(width, slider1, bgdata, fillableAreas) {
       timeup = timeup + littledelta
     }
   }
+  console.log("time", performance.now() - starttime)
   /*
   console.log("outer time", performance.now() - start)
   console.log("one time", timeone)
@@ -890,6 +1360,7 @@ function stepThroughFillables(img2, fillableAreas, palArr, width) {
   let palLocn = 0
   let altpal = 5
   for (let i = 0; i < fillableAreas.length; i++) {
+    //palLocn = Math.floor(Math.random() * (palArr.length - 1))
     let usecolor = hexToRgb(palArr[palLocn][1])
     // sub out black
     if (usecolor.r === 0 && usecolor.g === 0 && usecolor.b === 0) {
@@ -918,7 +1389,7 @@ function stepThroughFillables(img2, fillableAreas, palArr, width) {
         let y = fillableAreas[i][k][j + 1]      
         const l = (y * width + x) * 4
         // (k % 4 === 1 || k % 4 === 2)
-        if ((!notan && slider2.value % 2 == 0 && k % 2 === 1) || (notan && ((i % 2 === 0)))) {
+        if ((fillablesStyle === 1 && k % 2 == 1) || (!notan && slider2.value % 2 == 0 && k % 2 === 1) || (notan && ((i % 2 === 0)))) {
         // if ((!notan && slider2.value % 2 == 0 && k % 2 === 1) || (notan && ((i % 2 === 0 && k % 2 === 0) ||
         // (i % 2 === 1 && k % 2 === 1)))) {
         //if (k > Math.floor(fillableAreas[i].length / 2)) {
