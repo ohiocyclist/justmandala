@@ -1,6 +1,6 @@
 "use strict";
 
-let canvas = document.getElementById("drawCanvas");
+let canvas = document.getElementById("drawCanvas")
 
 let dotess = 0
 const notan = false
@@ -208,7 +208,7 @@ function getAdjacentWhite(data, startX, startY, width, height, blackfun) {
 function hexToRgb(hex) {
     hex = hex.replace(/^#/, "");
 
-    // expand shorthand #fff → #ffffff
+    // expand shorthand #fff -> #ffffff
     if (hex.length === 3) {
         hex = hex.split("").map(c => c + c).join("");
     }
@@ -484,36 +484,36 @@ function euclidDistance(x, y, w, z) {
 
 function randomMandala(cx, cy, radius, mirrorFactor) {
     // this function provided by Microsoft Copilot
-    let points = [];
-    let count = 5 + Math.floor(Math.random() * 6);
+    let points = []
+    let count = 5 + Math.floor(Math.random() * 6)
 
     // Generate a random stroke in one wedge
     for (let i = 0; i < count; i++) {
         points.push({
             x: Math.random() * radius,
             y: (Math.random() - 0.6) * radius * 0.5
-        });
+        })
     }
 
     // Mirror around center
     // We don't need to draw all the mirrors, Copilot didn't
     // understand that the rest of the code takes care of that
     for (let m = 0; m <= 0; m++) { //m < mirrorFactor; m++) {
-        let a = (Math.PI * 2 * m) / mirrorFactor;
-        let cosA = Math.cos(a);
-        let sinA = Math.sin(a);
+        let a = (Math.PI * 2 * m) / mirrorFactor
+        let cosA = Math.cos(a)
+        let sinA = Math.sin(a)
 
         for (let i = 0; i < points.length - 1; i++) {
-            let p1 = points[i];
-            let p2 = points[i + 1];
+            let p1 = points[i]
+            let p2 = points[i + 1]
 
-            let x1 = cx + p1.x * cosA - p1.y * sinA;
-            let y1 = cy + p1.x * sinA + p1.y * cosA;
+            let x1 = cx + p1.x * cosA - p1.y * sinA
+            let y1 = cy + p1.x * sinA + p1.y * cosA
 
-            let x2 = cx + p2.x * cosA - p2.y * sinA;
-            let y2 = cy + p2.x * sinA + p2.y * cosA;
+            let x2 = cx + p2.x * cosA - p2.y * sinA
+            let y2 = cy + p2.x * sinA + p2.y * cosA
 
-            drawLine(x1, y1, x2, y2);
+            drawLine(x1, y1, x2, y2)
 
             // Optional reflection for denser mandalas
             drawLine(
@@ -521,7 +521,7 @@ function randomMandala(cx, cy, radius, mirrorFactor) {
                 cy + p1.x * sinA - p1.y * cosA,
                 cx + p2.x * cosA + p2.y * sinA,
                 cy + p2.x * sinA - p2.y * cosA
-            );
+            )
         }
     }
 }
@@ -916,8 +916,14 @@ function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
       if (x === width - fact) fact = 0
       if (areaMap[idx - width - fact] !== 0 && areaMap[idx - width - fact] != undefined) {
         prevNumber = areaMap[idx - width - fact]
+      } else if (x < width - 1 && areaMap[idx + 1] !== 0 && areaMap[idx + 1] != undefined) {
+        prevNumber = areaMap[idx + 1]
+      } else if (x < width - 2 && areaMap[idx + 2] !== 0 && areaMap[idx + 2] != undefined) {
+        prevNumber = areaMap[idx + 2]
       } else if (x < width - 3 && areaMap[idx + 3] !== 0 && areaMap[idx + 3] != undefined) {
         prevNumber = areaMap[idx + 3]
+//      } else if (x < width - 4 && areaMap[idx + 4] !== 0 && areaMap[idx + 4] != undefined) {
+//        prevNumber = areaMap[idx + 4]
       }
       // now recolor with x or y
       if (prevNumber !== 0 && areaMap[idx] !== 0) {
@@ -972,9 +978,9 @@ function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
         if (bossLeft !== bossRight) {
           // Make the smaller or larger ID the boss (consistently) to prevent cycles
           if (bossLeft < bossRight) {
-            equivs[bossRight] = bossLeft;
+            equivs[bossRight] = bossLeft
           } else {
-            equivs[bossLeft] = bossRight;
+            equivs[bossLeft] = bossRight
           }
         }
       }
@@ -997,7 +1003,7 @@ function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
     }
   }
 
-  // 2. Pre-flatten all output subarrays once—O(N) flat pass
+  // 2. Pre-flatten all output subarrays once -- O(N) flat pass
   const flatOutputs = new Array(areaNumber + 1)
   for (let i = 1; i <= areaNumber; i++) {
     const out = output[i]
@@ -1008,7 +1014,7 @@ function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
   const deads = new Uint8Array(areaNumber + 1) // +1 to safely handle 1-based indexing
 
   for (let i = 1; i <= areaNumber; i++) {
-    //const currentFlat = flatOutputs[i];
+    //const currentFlat = flatOutputs[i]
     const currentFlat = output[i]
     
     if (currentFlat && !deads[i]) {
@@ -1023,15 +1029,15 @@ function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
       if (combinedFlat.length < 2) continue
             
       // Look up pre-grouped matches instantly instead of looping over everything
-      const matches = equivBuckets[i];
+      const matches = equivBuckets[i]
       if (matches) {
         for (let m = 0; m < matches.length; m++) {
-          const j = matches[m];
+          const j = matches[m]
           if (!deads[j]) { // Safety check, though usually redundant depending on logic
-            deads[j] = 1;
+            deads[j] = 1
             
             // Flattened data is already prepared; push elements efficiently
-            const matchFlat = flatOutputs[j];
+            const matchFlat = flatOutputs[j]
             if (matchFlat) {
               let matchout = 0
               let matchstride = 60000
@@ -1054,7 +1060,11 @@ function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
         maxval = Math.max(...combinedFlat.slice(0, Math.min(combinedFlat.length, 65500)))
       }
       if (maxval > width - 2) {
-        continue
+        //console.log(combinedFlat)
+        if (combinedFlat.length > 100000) {
+          //console.log("still exclude")
+          continue
+        }
       }
       
       if (combinedFlat.length > 2) {
@@ -1062,11 +1072,12 @@ function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
       }
     }
   }
+
 }
 
 function areaBasedSymmetry(realoutputs, fillableAreas, width) {
   const everyonespoints = []
-  for (let i = 1; i < realoutputs.length; i++) {
+  for (let i = 0; i < realoutputs.length; i++) {
     if (realoutputs[i] === undefined || realoutputs[i].length < 3) {
       continue
     }
@@ -1152,7 +1163,12 @@ function areaBasedSymmetry(realoutputs, fillableAreas, width) {
     if (!usedpoints[i]) {
       console.log("unfilled area", i, realoutputs[i][0], realoutputs[i][1])
       // don't color the background
-      if ((realoutputs[i][0] === 0 || realoutputs[i][0] === width - 1) && (realoutputs[i][1] === 0 || realoutputs[i][1] === width - 1)) continue
+      if ((realoutputs[i][0] === 0 || realoutputs[i][0] === width - 1) && (realoutputs[i][1] === 0 || realoutputs[i][1] === width - 1)) {
+        console.log("don't add, edge exclusion")
+        continue
+      } else {
+        //console.log(realoutputs[i])
+      }
       fillableAreas.push([realoutputs[i]])
     }
   }
@@ -1178,12 +1194,12 @@ function stackSweepOnAreas(bgdata, realoutputs, fillableAreas, width, slider1) {
       acc[1] += Number(mycurr[1])
       return acc
     }, [0, 0])
-    x = Math.round(total[0]  / startlength)
-    y = Math.round(total[1]  / startlength)
+    let x = Math.round(total[0]  / startlength)
+    let y = Math.round(total[1]  / startlength)
     // let's try a guaranteed point towards the middleish
     // in pathological conditions with the above algo, x,y can be outside the actual list of coordinates
     const loopprog = performance.now()
-    startcoordssort = [...tempset].sort().map((x) => {splitty = x.split(','); return [Number(splitty[0]), Number(splitty[1])]})
+    const startcoordssort = [...tempset].sort().map((x) => {let splitty = x.split(','); return [Number(splitty[0]), Number(splitty[1])]})
     if (!tempset.has([x,y].join(','))) {
       const picmid = Math.floor(startcoordssort.length / 2)
       x = startcoordssort[picmid][0]
@@ -1194,7 +1210,7 @@ function stackSweepOnAreas(bgdata, realoutputs, fillableAreas, width, slider1) {
     for (let [xx, yy] of presymmetricPoints) {
       xx = Math.round(xx)
       yy = Math.round(yy)
-      idx = (xx + yy * width)
+      let idx = (xx + yy * width)
       symmetricPoints.push([xx, yy])
       seen[idx] = 1
     }
@@ -1246,17 +1262,28 @@ function stackSweepOnAreas(bgdata, realoutputs, fillableAreas, width, slider1) {
   }
 }
 
+function naivePushAreas(realoutputs, fillableAreas) {
+  for(let i = 0; i < realoutputs.length; i++) {
+    fillableAreas.push([realoutputs[i]])
+  }
+}
+
 function getAllFillable(width, slider1, bgdata, fillableAreas) {
   const starttime = performance.now()
   const realoutputs = []
   getAllWhiteAreas(bgdata, realoutputs, slider1, width)
   const midpoint = performance.now()
   console.log('first half', midpoint - starttime)
+  let donaive = false
 
-  if (fillablesStyle) { 
-    areaBasedSymmetry(realoutputs, fillableAreas, width)
+  if (donaive) {
+    naivePushAreas(realoutputs, fillableAreas)
   } else {
-    stackSweepOnAreas(bgdata, realoutputs, fillableAreas, width, slider1)
+    if (fillablesStyle) { 
+      areaBasedSymmetry(realoutputs, fillableAreas, width)
+    } else {
+      stackSweepOnAreas(bgdata, realoutputs, fillableAreas, width, slider1)
+    }
   }
   console.log('second half', performance.now() - midpoint)
 }
@@ -1463,7 +1490,7 @@ function stepThroughFillables(img2, fillableAreas, palArr, width) {
         let y = fillableAreas[i][k][j + 1]      
         const l = (y * width + x) * 4
         // (k % 4 === 1 || k % 4 === 2)
-        if ((fillablesStyle === 1 && k % 2 == 1) || (!notan && slider2.value % 2 == 0 && k % 2 === 1) || (notan && ((i % 2 === 0)))) {
+        if (slider2.value % 2 === 0 && k % 2 === 1) { //|| (notan && ((i % 2 === 0)))) {
         // if ((!notan && slider2.value % 2 == 0 && k % 2 === 1) || (notan && ((i % 2 === 0 && k % 2 === 0) ||
         // (i % 2 === 1 && k % 2 === 1)))) {
         //if (k > Math.floor(fillableAreas[i].length / 2)) {
@@ -1486,8 +1513,8 @@ function notanfun() {
   const img = ctx.getImageData(0, 0, symmetry, symmetry)
   const data = img.data
   // sweep over all the data
-  for (i = 0; i <= xCenter; i++) {
-    for (j = 0; j < symmetry; j++) {
+  for (let i = 0; i <= xCenter; i++) {
+    for (let j = 0; j < symmetry; j++) {
       const idx = ((xCenter - i) + symmetry * j) * 4
       const midx = ((xCenter + i) + symmetry * j) * 4
       let r = data[idx]
@@ -1522,7 +1549,7 @@ sliderValueDisplay.textContent = 4
 slider.addEventListener("input", (event) => {
    	const sliderValue = event.target.value
    	sliderValueDisplay.textContent = sliderValue
-});
+})
 
 const pointerButtons = document.querySelectorAll('input[name="pointer"]')
 
@@ -1568,7 +1595,7 @@ sliderValueDisplay2.textContent = 16
 slider2.addEventListener("input", (event) => {
    	const sliderValue2 = event.target.value
    	sliderValueDisplay2.textContent = sliderValue2
-});
+})
 
 rslider.value = 127
 gslider.value = 127
@@ -1596,9 +1623,9 @@ bslider.addEventListener("input", (event) => {
 })
 
 window.addEventListener("DOMContentLoaded", () => {
-  const slider = document.getElementById("mySlider");
-  slider.value = 4;   // Force it back to 4
-  const slider2 = document.getElementById("mySlider2");
-  slider2.value = 16;   // Force it back to 16
-});
+  const slider = document.getElementById("mySlider")
+  slider.value = 4   // Force it back to 4
+  const slider2 = document.getElementById("mySlider2")
+  slider2.value = 16   // Force it back to 16
+})
 
