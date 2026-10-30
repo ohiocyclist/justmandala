@@ -1,8 +1,11 @@
-var canvas = document.getElementById("drawCanvas");
+"use strict";
 
+let canvas = document.getElementById("drawCanvas");
+
+let dotess = 0
 const notan = false
 const fillablesStyle = 1
-var getcanvas, ctx, prevX, prevY
+let getcanvas, ctx, prevX, prevY
 let symmetry = canvas.width
 let xCenter = symmetry / 2
 let slider = document.getElementById("mySlider")
@@ -239,7 +242,7 @@ function fill(e) {
     const refb = da[2]
     let symmetricPoints = []
     // help target small areas
-    if (alllength < 800 && fillorOther !== 'one') {
+    if (alllength < 800 && fillOrOther !== 'one') {
       for (let i = 0; i < Math.min(alllength, 200); i += 8) {
         let thispoints = getSymmetryPoints(allcoords[i], allcoords[i + 1])
         symmetricPoints = [...symmetricPoints, ...thispoints]
@@ -348,50 +351,115 @@ function drop(e) {
 function getSymmetryPoints(x, y, domirror=true) {
   // The coordinate system has its origin at the center of the canvas,
   // has up as 0 degrees, right as 90 deg, down as 180 deg, and left as 270 deg.
-  var ctrX = Math.floor(symmetry / 2);
-  var ctrY = Math.floor(symmetry / 2);
-  var relX = x - ctrX;
-  var relY = ctrY - y;
-  var dist = Math.hypot(relX, relY);
-  var angle = Math.atan2(relX, relY); // Radians
-  var result = [];
-  var radian = Number(sliderValueDisplay2.textContent)
+  let ctrX = Math.floor(symmetry / 2)
+  let ctrY = Math.floor(symmetry / 2)
+  if (dotess === 3) {
+    if (x < xCenter) {
+      ctrX = ctrX * 0.5
+      if (y < xCenter) {
+        ctrY = ctrY * 0.5
+      } else {
+        ctrY = ctrY * 1.5
+      }
+    } else {
+      ctrX = ctrX * 1.5
+      if (y < xCenter) {
+        ctrY = ctrY * 0.5
+      } else {
+        ctrY = ctrY * 1.5
+      }
+    }
+  }
+  let relX = x - ctrX
+  let relY = ctrY - y
+  let dist = Math.hypot(relX, relY)
+  let angle = Math.atan2(relX, relY) // Radians
+  let result = []
+  let radian = Number(sliderValueDisplay2.textContent)
   // push all the originals, then all the mirrors
-  for (var i = 0; i < radian; i++) {
-    var theta = angle + ((Math.PI * 2) / radian) * i; // Radians
-    x = ctrX + Math.sin(theta) * dist;
-    y = ctrY - Math.cos(theta) * dist;
-    result.push([Math.round(x), Math.round(y)]);
+  for (let i = 0; i < radian; i++) {
+    let theta = angle + ((Math.PI * 2) / radian) * i // Radians
+    x = ctrX + Math.sin(theta) * dist
+    y = ctrY - Math.cos(theta) * dist
+    result.push([Math.round(x), Math.round(y)])
   }
   // this mirrors the points around the spoke of the symmetry
   // hence symmetry === 2 is actually 4 etc.
   // but it allows the user to easily draw closed areas
   if (domirror) {
-    for (var i = 0; i < radian; i++) {
-      var theta = angle + ((Math.PI * 2) / radian) * i; // Radians
-      y = ctrY - Math.cos(theta) * dist;
-      x = ctrX - Math.sin(theta) * dist;
-      result.push([Math.round(x), Math.round(y)]);
+    for (let i = 0; i < radian; i++) {
+      let theta = angle + ((Math.PI * 2) / radian) * i // Radians
+      y = ctrY - Math.cos(theta) * dist
+      x = ctrX - Math.sin(theta) * dist
+      result.push([Math.round(x), Math.round(y)])
     }
   }
 
+  let prelength = result.length
+  if (dotess === 1 || dotess === 2) {
+    // make the copies in the corners
+    const newresults = []
+    for (let i = 0; i < result.length; i++) {
+      // remap by quadrant
+      if (result[i][0] >= xCenter && result[i][1] >= xCenter) {
+        newresults.push([result[i][0] - xCenter, result[i][1] - xCenter])
+      } else if (result[i][0] >= xCenter && result[i][1] < xCenter) {
+        newresults.push([result[i][0] - xCenter, result[i][1] + xCenter])
+      } else if (result[i][0] < xCenter && result[i][1] >= xCenter) {
+        newresults.push([result[i][0] + xCenter, result[i][1] - xCenter])
+      } else if (result[i][0] < xCenter && result[i][1] < xCenter) {
+        newresults.push([result[i][0] + xCenter, result[i][1] + xCenter])
+      }
+    }
+    result = [...result, ...newresults]
+  } 
+  if (dotess === 2) {
+    // make the copies above, below, and to the sides
+    const newresults = []
+    for (let i = 0; i < prelength; i++) {
+      if (result[i][0] < xCenter) {
+        newresults.push([result[i][0] + xCenter, result[i][1]])
+      } else {
+        newresults.push([result[i][0] - xCenter, result[i][1]])
+      }
+      if (result[i][1] < xCenter) {
+        newresults.push([result[i][0], result[i][1] + xCenter])
+      } else {
+        newresults.push([result[i][0], result[i][1] - xCenter])
+      }
+    }
+    result = [...result, ...newresults]
+  }
+  if (dotess === 3) {
+    // need copies at the other quarter points
+    const newresults = []
+    for (let i = 0; i < prelength; i++) {
+      newresults.push([symmetry - result[i][0], result[i][1]])
+      newresults.push([result[i][0], symmetry - result[i][1]])
+      newresults.push([symmetry - result[i][0], symmetry - result[i][1]])
+    }
+    result = [...result, ...newresults]
+  }
+
   //console.log(result)
-  return result;
+  return result
 }
 
 function drawLine(x1, y1, x2, y2) {
   // connect a beginning and ending points
-  startPoints = getSymmetryPoints(x1, y1);
-  endPoints = getSymmetryPoints(x2, y2);
+  const startPoints = getSymmetryPoints(x1, y1)
+  const endPoints = getSymmetryPoints(x2, y2)
 
-  ctx.lineWidth = Number(sliderValueDisplay.textContent);
+  ctx.lineWidth = Number(sliderValueDisplay.textContent)
 
-  ctx.beginPath();
-  ctx.lineCap = "round";
+  ctx.beginPath()
+  ctx.lineCap = "round"
 
   for (var i = 0; i < startPoints.length; i++) {
-    ctx.moveTo(startPoints[i][0], startPoints[i][1])
-    ctx.lineTo(endPoints[i][0], endPoints[i][1])
+    if (euclidDistance(startPoints[i][0], startPoints[i][1], endPoints[i][0], endPoints[i][1]) < (xCenter * 1)) {
+      ctx.moveTo(startPoints[i][0], startPoints[i][1])
+      ctx.lineTo(endPoints[i][0], endPoints[i][1])
+    }
   }
 
   ctx.stroke()
@@ -570,7 +638,7 @@ function randomDraw() {
   } else if (randval < 0.36) {
     // geometric forms style
     console.log("geo forms")
-    for (i = -10; i < xCenter - 150; i += 52) {
+    for (let i = -10; i < xCenter - 150; i += 52) {
       // skew y for the broader spectrum
       let jend = 0
       // more space to fill further out
@@ -581,7 +649,7 @@ function randomDraw() {
       if (slider2.value < 9) {
         jend++
       }
-      for (j = 0; j <= jend; j++) {
+      for (let j = 0; j <= jend; j++) {
         let subdivide = 3
         let jittersize = 20 * Math.random() - 10
         let randdivive = Math.random()
@@ -597,7 +665,7 @@ function randomDraw() {
         let figscale = 50
         let lastlocs = [0, 0]
         const angshift = Math.PI * Math.random() / 2
-        for (preangle = 0; preangle <= Math.PI * 2; preangle += Math.PI * 2 / subdivide) {
+        for (let preangle = 0; preangle <= Math.PI * 2; preangle += Math.PI * 2 / subdivide) {
           const angle = preangle - Math.PI / 4 + angshift
           const thislocs = [Math.cos(angle) * figscale + xCenter + i + jittersize, 
                         Math.sin(angle) * figscale + xCenter + i + j * figscale * 2 + jittersize]
@@ -658,13 +726,15 @@ function randomDraw() {
     ctx.strokeStyle = color
     let endx = xCenter
     let endy = xCenter
+    let startx = 0
+    let starty = 0
     let angle = 0
     for (let i = 0; i < 6; i++) {
       // draw the center and then move out a bit
       if (i === 1 || i === 2) {
         continue
       }
-      step = (i + 1) * 30 + (i + 1) * 10 * Math.random()
+      let step = (i + 1) * 30 + (i + 1) * 10 * Math.random()
       if (angle === 0) {
         startx = endx + step
         starty = endy - step
@@ -722,6 +792,10 @@ function randomDraw() {
     // interlocking crossing lines style
     let workfactor = 12
     let ifactor = 2
+    let endx = 0
+    let endy = 0    
+    let startx = 0
+    let starty = 0
     for(let i = 0; i < workfactor - 3; i++) {
       ctx.strokeStyle = color
       // draw in the center to start, then push towards the edges
@@ -835,7 +909,7 @@ function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
   let prevNumber = 0
   for (let y = 0; y < width; y++) {
     for (let x = width - 1; x >= 0; x--) {
-      idx = x + y * width
+      let idx = x + y * width
       // force to Y merge number if available
       // step over in x as well
       let fact = 1
@@ -858,41 +932,41 @@ function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
   }
 
   // merge step diagonals
-  equivs = {}
+  let equivs = {}
 
   // 1. Helper function to find the absolute "boss" (root) of any area
   // This uses path compression, making future lookups near-instant O(1)
   function findBoss(id, equivs) {
-    let root = id;
+    let root = id
     while (equivs[root]) {
-      root = equivs[root];
+      root = equivs[root]
     }
     
     // Path compression: point directly to the ultimate boss to speed up next time
-    let current = id;
+    let current = id
     while (current !== root) {
-      let next = equivs[current];
-      equivs[current] = root;
-      current = next;
+      let next = equivs[current]
+      equivs[current] = root
+      current = next
     }
     
-    return root;
+    return root
   }
 
   // 2. Your updated loop structure
   for (let y = 0; y < width; y++) {
     for (let x = width - 2; x >= 0; x--) {
-      const idx = x + y * width;
+      const idx = x + y * width
       
-      const leftArea = areaMap[idx];
-      const rightArea = areaMap[idx + 1];
+      const leftArea = areaMap[idx]
+      const rightArea = areaMap[idx + 1]
       
       // Only merge if both are valid areas and they aren't already the same literal ID
       if (leftArea > 0 && rightArea > 0 && leftArea !== rightArea) {
         
         // Find the ultimate boss of BOTH stripes
-        const bossLeft = findBoss(leftArea, equivs);
-        const bossRight = findBoss(rightArea, equivs);
+        const bossLeft = findBoss(leftArea, equivs)
+        const bossRight = findBoss(rightArea, equivs)
         
         // If they don't share the same ultimate boss yet, link them!
         if (bossLeft !== bossRight) {
@@ -1007,12 +1081,12 @@ function areaBasedSymmetry(realoutputs, fillableAreas, width) {
       acc[1] += Number(mycurr[1])
       return acc
     }, [0, 0])
-    x = Math.round(total[0] / startlength)
-    y = Math.round(total[1] / startlength)
+    let x = Math.round(total[0] / startlength)
+    let y = Math.round(total[1] / startlength)
     // let's try a guaranteed point towards the middleish
     // in pathological conditions with the above algo, x,y can be outside the actual list of coordinates
     const loopprog = performance.now()
-    startcoordssort = [...tempset].sort().map((x) => {splitty = x.split(','); return [Number(splitty[0]), Number(splitty[1])]})
+    let startcoordssort = [...tempset].sort().map((x) => {let splitty = x.split(','); return [Number(splitty[0]), Number(splitty[1])]})
     // points just flat-out doesn't work.  Better to hope the inner and outer area's centers aren't close.
     let pstamp = 0
     if (!tempset.has([x,y].join(','))) {
@@ -1027,13 +1101,13 @@ function areaBasedSymmetry(realoutputs, fillableAreas, width) {
     everyonespoints[i] = [x, y, pstamp]
   }
 
-  usedpoints = {}
-  for (let i = 1; i < realoutputs.length; i++) {    
+  let usedpoints = {}
+  for (let i = 0; i < realoutputs.length; i++) {    
     if (usedpoints[i]) continue
-    [x, y] = everyonespoints[i]
+    let [x, y] = everyonespoints[i]
     const symmetricPoints = getSymmetryPoints(x, y, false)
-    thisarea = []
-    for (let j = 1; j < everyonespoints.length; j++) {
+    let thisarea = []
+    for (let j = 0; j < everyonespoints.length; j++) {
       let mindist = 999999
       let winnerpick = 0
       let counterpick = -1
@@ -1043,7 +1117,7 @@ function areaBasedSymmetry(realoutputs, fillableAreas, width) {
         for (let [xx, yy] of symmetricPoints) {
           xx = Math.round(xx)
           yy = Math.round(yy)
-          idx = (xx + yy * width)
+          let idx = (xx + yy * width)
           let thisdist = euclidDistance(xx, yy, everyonespoints[j][0], everyonespoints[j][1])
           // if the number of points is stamped, make sure it's similar
           // if (everyonespoints[i][2] > 50) console.log('pstamp comparison:', everyonespoints[i][2], everyonespoints[j][2])
@@ -1087,7 +1161,7 @@ function areaBasedSymmetry(realoutputs, fillableAreas, width) {
 function stackSweepOnAreas(bgdata, realoutputs, fillableAreas, width, slider1) {
   // do the standard setup
   let seen = new Set()
-  for (let i = 1; i < realoutputs.length; i++) {
+  for (let i = 0; i < realoutputs.length; i++) {
     if (realoutputs[i] === undefined || realoutputs[i].length < 3) {
       continue
     }
@@ -1470,6 +1544,24 @@ fillstyleButtons.forEach(radio => {
 })
 
 fillstyleButtons[0].checked = true
+
+const drawstyleButtons = document.querySelectorAll('input[name="drawstyle"]')
+
+drawstyleButtons.forEach(radio => {
+  radio.addEventListener('change', () => {
+    const tesselButtonValue = document.querySelector('input[name="drawstyle"]:checked').value
+    dotess = 0
+    if (tesselButtonValue === 'tessel') {
+      dotess = 1
+    } else if (tesselButtonValue === 'double') {
+      dotess = 2
+    } else if (tesselButtonValue === 'recenter') {
+      dotess = 3
+    }
+  })
+})
+
+drawstyleButtons[0].checked = true
 
 sliderValueDisplay2.textContent = 16
 
