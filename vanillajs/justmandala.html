@@ -54,12 +54,12 @@
     </h4>
     </div>
     <div>
-    Red: <span id="rsliderValue"></span>
-    <input type="range" id="redSlider" min="0" max="255" value="127" style="width: 150px">
-    Green: <span id="gsliderValue"></span>
-    <input type="range" id="greenSlider" min="0" max="255" value="127" style="width: 150px">
-    Blue: <span id="bsliderValue"></span>
-    <input type="range" id="blueSlider" min="0" max="255" value="127" style="width: 150px">
+      <div>
+      <canvas id="picker" width="600" height="600"></canvas>      
+      </div><div>
+      Luminance: <input type="range" id="luminance" min="0" max="255" value="127" style="width: 150px">
+      </div>
+    </div>
     <div>
       Reload a Mandala:
       <input type="file" id="fileInput" accept="image/*">

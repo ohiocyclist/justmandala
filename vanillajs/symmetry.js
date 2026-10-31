@@ -12,17 +12,17 @@ let slider = document.getElementById("mySlider")
 let sliderValueDisplay = document.getElementById("sliderValue")
 let slider2 = document.getElementById("mySlider2")
 let sliderValueDisplay2 = document.getElementById("sliderValue2")
-let rslider = document.getElementById("redSlider")
-let rsliderValueDisplay = document.getElementById("rsliderValue")
-let gslider = document.getElementById("greenSlider")
-let gsliderValueDisplay = document.getElementById("gsliderValue")
-let bslider = document.getElementById("blueSlider")
-let bsliderValueDisplay = document.getElementById("bsliderValue")
 let color = "#000000"
 let drawOrFill = 'draw'
 let fillOrOther = 'every'
 let fillOrOtherDisplay = document.getElementById("fillOrOther")
 let curclicked = "black"
+const hexcanvas = document.getElementById("picker")
+const hexctx = hexcanvas.getContext("2d")
+
+const hexCenterX = hexcanvas.width / 2
+const radius = 220
+let luminance = document.getElementById("luminance")
 
 /**
  *  Colors button event listner example
@@ -142,6 +142,78 @@ function getPixelColor(ctx, x, y) {
     const { data } = ctx.getImageData(x, y, 1, 1)
     return { r: data[0], g: data[1], b: data[2], a: data[3] }
 }
+
+// Draw color picker
+// not a hexagon right now
+function pointInHexagon(x, y) {
+    const dx = Math.abs(x - hexCenterX)
+    const dy = Math.abs(y - hexCenterX)
+
+    return dy <= radius * Math.sqrt(3) / 2 &&
+           Math.sqrt(3) * dx + dy <= Math.sqrt(3) * radius
+}
+
+// HSV -> RGB
+function hsvToRgb(h, s, v) {
+    let c = v * s
+    let x = c * (1 - Math.abs((h / 60) % 2 - 1))
+    let m = v - c
+
+    let r, g, b
+
+    if (h < 60)      [r,g,b] = [c,x,0]
+    else if (h < 120)[r,g,b] = [x,c,0]
+    else if (h < 180)[r,g,b] = [0,c,x]
+    else if (h < 240)[r,g,b] = [0,x,c]
+    else if (h < 300)[r,g,b] = [x,0,c]
+    else             [r,g,b] = [c,0,x]
+
+    return {
+        r: Math.round((r+m)*255),
+        g: Math.round((g+m)*255),
+        b: Math.round((b+m)*255)
+    }
+}
+
+// Render color wheel clipped to hexagon
+function drawHexPicker() {
+    const image = hexctx.createImageData(hexcanvas.width, hexcanvas.height)
+    const data = image.data
+
+    for (let y = 0; y < hexcanvas.height; y++) {
+        for (let x = 0; x < hexcanvas.width; x++) {
+
+            const idx = (y * hexcanvas.width + x) * 4
+
+            // not currently a hexagon
+            if (false && !pointInHexagon(x, y)) {
+                data[idx+3] = 0
+                continue
+            }
+
+            const dx = x - hexCenterX
+            const dy = y - hexCenterX
+
+            const distance = Math.sqrt(dx*dx + dy*dy)
+            const saturation = Math.min(2 * distance / ( 1 * radius), 1)
+
+            let hue = Math.atan2(dy, dx) * 180 / Math.PI
+            if (hue < 0) hue += 360
+      	    //let luminance = 1 - Math.min(distance / ( 2.5 * radius), 1)
+            const rgb = hsvToRgb(hue, saturation, luminance.value / 255)
+
+            data[idx]   = rgb.r
+            data[idx+1] = rgb.g
+            data[idx+2] = rgb.b
+            data[idx+3] = 255
+        }
+    }
+
+    hexctx.putImageData(image, 0, 0)
+
+}
+
+drawHexPicker()
 
 function isWhite({ r, g, b, a }) {
     return r === 255 && g === 255 && b === 255 && a === 255
@@ -323,19 +395,11 @@ function draw(e) {
   prevY = y
 }
 
-function colorUpdate(data, doupdate) {
+function colorUpdate(data) {
   document.getElementById("flex").style.backgroundColor = rgbToHex(data[0], data[1], data[2])
   // if we're currently clicked, the color has changed, but the button setup hasn't fired
   if (curclicked === 'flex') {
     color = rgbToHex(data[0], data[1], data[2])
-  }
-  if (doupdate) {
-    rslider.value = data[0]
-    rsliderValueDisplay.textContent = data[0]
-    gslider.value = data[1]
-    gsliderValueDisplay.textContent = data[1]
-    bslider.value = data[2]
-    bsliderValueDisplay.textContent = data[2]
   }
   // update for the autofill
   for (let i = 0; i < colorlist.length; i++) {
@@ -357,7 +421,7 @@ function drop(e) {
   if (e.buttons == 1 || e.type == "touchmove") {
       const { data } = ctx.getImageData(coord[0], coord[1], 1, 1)
       //console.log(`dropper, ${data[0]} ${data[1]} ${data[2]}`)
-      colorUpdate(data, true)
+      colorUpdate(data)
   }
 }
 
@@ -1613,31 +1677,6 @@ slider2.addEventListener("input", (event) => {
    	sliderValueDisplay2.textContent = sliderValue2
 })
 
-rslider.value = 127
-gslider.value = 127
-bslider.value = 127
-rsliderValueDisplay.textContent = 127
-gsliderValueDisplay.textContent = 127
-bsliderValueDisplay.textContent = 127
-
-rslider.addEventListener("input", (event) => {
-  const sliderValue = event.target.value
-  rsliderValueDisplay.textContent = sliderValue
-  colorUpdate([rslider.value, gslider.value, bslider.value], false)
-})
-
-gslider.addEventListener("input", (event) => {
-  const sliderValue = event.target.value
-  gsliderValueDisplay.textContent = sliderValue
-  colorUpdate([rslider.value, gslider.value, bslider.value], false)
-})
-
-bslider.addEventListener("input", (event) => {
-  const sliderValue = event.target.value
-  bsliderValueDisplay.textContent = sliderValue
-  colorUpdate([rslider.value, gslider.value, bslider.value], false)
-})
-
 window.addEventListener("DOMContentLoaded", () => {
   const slider = document.getElementById("mySlider")
   slider.value = 4   // Force it back to 4
@@ -1645,3 +1684,28 @@ window.addEventListener("DOMContentLoaded", () => {
   slider2.value = 16   // Force it back to 16
 })
 
+luminance.addEventListener("input", (event) => {
+    drawHexPicker()
+})
+
+hexcanvas.addEventListener("click", e => {
+    const rect = hexcanvas.getBoundingClientRect()
+
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+
+    if (false && !pointInHexagon(x, y)) return
+
+    const pixel = hexctx.getImageData(x, y, 1, 1).data
+
+    const hex = rgbToHex(pixel[0], pixel[1], pixel[2])
+
+    colorUpdate(pixel)
+
+    // Selection marker
+    drawHexPicker()
+})
+
+hexcanvas.addEventListener('mousemove', () => {
+  hexcanvas.style.cursor = "url('dropper.png') 6 26, auto"
+})
