@@ -228,18 +228,22 @@ function rgbToHex(r, g, b) {
 
 function fill(e) {
   // fill areas with color 
-  var coord = getLocalCoordinates(e);
+  let coord = getLocalCoordinates(e);
   if (e.buttons == 1 || e.type == "touchmove") {
-    var x = Math.floor(coord[0])
-    var y = Math.floor(coord[1])
+    let x = Math.floor(coord[0])
+    let y = Math.floor(coord[1])
     let img = ctx.getImageData(0, 0, symmetry, symmetry)
     let data = img.data
+    let index = ( x + y * symmetry ) * 4
+    // weed out starting black points
+    const refr = data[index]
+    const refg = data[index + 1]
+    const refb = data[index + 2]
+    if (refr < 20 && refg < 20 && refb < 20) {
+      console.log("hit a black area", refr, refg, refb)
+      return
+    }
     let [allcoords, alllength] = getAdjacentWhite(data, x, y, symmetry, symmetry, false)
-    const pimg = ctx.getImageData(x, y, 1, 1)
-    const da = pimg.data    
-    const refr = da[0]
-    const refg = da[1]
-    const refb = da[2]
     let symmetricPoints = []
     // help target small areas
     if (alllength < 800 && fillOrOther !== 'one') {
@@ -265,14 +269,24 @@ function fill(e) {
           idx = idx + 1
           continue
         }
-        if (idx >= Math.floor(symmetricPoints.length / 2) && fillOrOther === 'other') continue
+        // need to skip out on the mirror images if we're doing other fill
+        // and re-engage if we're tessellating
+        if (!dotess && idx >= Math.floor(symmetricPoints.length / 2) && fillOrOther === 'other') {idx = idx + 1; continue}
+        if (dotess == 1 && ((idx >= Math.floor(symmetricPoints.length / 4) && idx < Math.floor(symmetricPoints.length / 2)) || idx >= Math.floor(symmetricPoints.length * 3 / 4)) && fillOrOther === 'other') {idx = idx + 1; continue}
+        if (dotess == 2 && ((idx >= Math.floor(symmetricPoints.length / 8) && idx < Math.floor(symmetricPoints.length / 4)) || (idx >= Math.floor(symmetricPoints.length * 3 / 8) && idx < Math.floor(symmetricPoints.length / 2))
+            || (idx >= Math.floor(symmetricPoints.length * 5 / 8) && idx < Math.floor(symmetricPoints.length * 3 / 4)) || (idx >= Math.floor(symmetricPoints.length * 7 / 8)))
+          && fillOrOther === 'other') {
+            idx = idx + 1
+            continue
+        }
         idx = idx + 1
         let [allcoords, alllength] = getAdjacentWhite(data, Math.floor(prex), Math.floor(prey), symmetry, symmetry, false)
+        //if (idx > 110 || (idx > 96 && idx < 104) || (idx > 64 && idx < 72)) {console.log(idx, allcoords)}
         
         for (let k = 0; k < alllength; k += 2) {
-          x = allcoords[k]
-          y = allcoords[k + 1]
-          const i = (y * symmetry + x) * 4
+          let xx = allcoords[k]
+          let yy = allcoords[k + 1]
+          const i = (yy * symmetry + xx) * 4
           data[i]     = usecolor.r
           data[i + 1] = usecolor.g
           data[i + 2] = usecolor.b
@@ -283,7 +297,6 @@ function fill(e) {
         idx = idx + 1
       }
     }
-    
     ctx.putImageData(img, 0, 0)
   }
 }
@@ -416,12 +429,15 @@ function getSymmetryPoints(x, y, domirror=true) {
   if (dotess === 2) {
     // make the copies above, below, and to the sides
     const newresults = []
+    // to make the every-other work right, push one set, then the next
     for (let i = 0; i < prelength; i++) {
       if (result[i][0] < xCenter) {
         newresults.push([result[i][0] + xCenter, result[i][1]])
       } else {
         newresults.push([result[i][0] - xCenter, result[i][1]])
       }
+    }
+    for (let i = 0; i < prelength; i++) {
       if (result[i][1] < xCenter) {
         newresults.push([result[i][0], result[i][1] + xCenter])
       } else {
