@@ -23,6 +23,9 @@ const hexctx = hexcanvas.getContext("2d")
 const hexCenterX = hexcanvas.width / 2
 const radius = 220
 let luminance = document.getElementById("luminance")
+let hexx = hexCenterX
+let hexy = hexCenterX
+const hexwidth = 600 // must match html
 
 /**
  *  Colors button event listner example
@@ -176,7 +179,7 @@ function hsvToRgb(h, s, v) {
 }
 
 // Render color wheel clipped to hexagon
-function drawHexPicker() {
+function drawHexPicker(inpx, inpy) {
     const image = hexctx.createImageData(hexcanvas.width, hexcanvas.height)
     const data = image.data
 
@@ -208,12 +211,29 @@ function drawHexPicker() {
             data[idx+3] = 255
         }
     }
+    // draw a target point
+    let targcolor = 0
+    if (luminance.value < 100) targcolor = 255
+    for (let x = Math.max(0, inpx - 5); x < Math.min(hexwidth, inpx + 5); x++) {
+      if (x === inpx) continue
+      const idx = (x + inpy * hexwidth) * 4
+      data[idx]     = targcolor
+      data[idx + 1] = targcolor
+      data[idx + 2] = targcolor
+    }
+    for (let y = Math.max(0, inpy - 5); y < Math.min(hexwidth, inpy + 5); y++) {
+      if (y === inpy) continue
+      const idx = (inpx + y * hexwidth) * 4
+      data[idx]     = targcolor
+      data[idx + 1] = targcolor
+      data[idx + 2] = targcolor
+    }
 
     hexctx.putImageData(image, 0, 0)
 
 }
 
-drawHexPicker()
+drawHexPicker(hexx, hexy)
 
 function isWhite({ r, g, b, a }) {
     return r === 255 && g === 255 && b === 255 && a === 255
@@ -968,8 +988,9 @@ function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
       let bdx = idx * 4
       let prevNumber = 0
       // skip forward past non-white areas
-      let whiteconditional = (bdx) => bgdata[bdx] < 215 || bgdata[bdx + 1] < 215 || bgdata[bdx + 2] < 215
-      if (whiteconditional(bdx)) {
+      let whiteconditional = (bdx) => (bgdata[bdx] < 215 && bgdata[bdx + 1] < 215 && bgdata[bdx + 2] < 215)
+      let gover = whiteconditional(bdx)
+      if (gover) {
         areaMap[idx] = 0
         continue
       }
@@ -980,9 +1001,28 @@ function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
       if (y > 0 && areaMap[idx - width] > 0) {
         prevNumber = areaMap[idx - width]
       }
+      if (x > 0 && y > 0 && areaMap[idx - width - 1] > 0 && prevNumber === 0) {
+        prevNumber = areaMap[idx - width - 1]
+      }
       if (prevNumber === 0) {areaNumber = areaNumber + 1; prevNumber = areaNumber; output[prevNumber] = []}
       areaMap[idx] = prevNumber
     }
+  }
+
+  const dobailhere = false
+  if (dobailhere) {
+    for (let y = 0; y < width; y++) {
+      for (let x = 0; x < width; x++) {
+        let idx = x + y * width
+        let thisdx = areaMap[idx]
+        if (thisdx > 0) {
+          output[thisdx].push([x, y])
+        }
+      }
+    }
+    for (let i = 1; i <= areaNumber; i++) {
+        realoutputs.push(output[i])
+    }    
   }
 
   // merge step combo x
@@ -996,14 +1036,14 @@ function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
       if (x === width - fact) fact = 0
       if (areaMap[idx - width - fact] !== 0 && areaMap[idx - width - fact] != undefined) {
         prevNumber = areaMap[idx - width - fact]
+//      } else if (x < width - 5 && areaMap[idx + 5] !== 0 && areaMap[idx + 4] != undefined) {
+//        prevNumber = areaMap[idx + 4]
       } else if (x < width - 1 && areaMap[idx + 1] !== 0 && areaMap[idx + 1] != undefined) {
         prevNumber = areaMap[idx + 1]
       } else if (x < width - 2 && areaMap[idx + 2] !== 0 && areaMap[idx + 2] != undefined) {
         prevNumber = areaMap[idx + 2]
-      } else if (x < width - 3 && areaMap[idx + 3] !== 0 && areaMap[idx + 3] != undefined) {
-        prevNumber = areaMap[idx + 3]
-//      } else if (x < width - 4 && areaMap[idx + 4] !== 0 && areaMap[idx + 4] != undefined) {
-//        prevNumber = areaMap[idx + 4]
+//      } else if (x < width - 3 && areaMap[idx + 3] !== 0 && areaMap[idx + 3] != undefined) {
+//        prevNumber = areaMap[idx + 3]
       }
       // now recolor with x or y
       if (prevNumber !== 0 && areaMap[idx] !== 0) {
@@ -1015,6 +1055,22 @@ function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
       }
       prevNumber = areaMap[idx]
     }
+  }
+
+  const dobailmsx = false
+  if (dobailmsx) {
+    for (let y = 0; y < width; y++) {
+      for (let x = 0; x < width; x++) {
+        let idx = x + y * width
+        let thisdx = areaMap[idx]
+        if (thisdx > 0) {
+          output[thisdx].push([x, y])
+        }
+      }
+    }
+    for (let i = 1; i <= areaNumber; i++) {
+        realoutputs.push(output[i])
+    }    
   }
 
   // merge step diagonals
@@ -1039,7 +1095,6 @@ function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
     return root
   }
 
-  // 2. Your updated loop structure
   for (let y = 0; y < width; y++) {
     for (let x = width - 2; x >= 0; x--) {
       const idx = x + y * width
@@ -1684,26 +1739,32 @@ window.addEventListener("DOMContentLoaded", () => {
   slider2.value = 16   // Force it back to 16
 })
 
+function lumlist(hexx, hexy) {
+    drawHexPicker(hexx, hexy)
+    const pixel = hexctx.getImageData(hexx, hexy, 1, 1).data
+    colorUpdate(pixel)    
+}
+
 luminance.addEventListener("input", (event) => {
-    drawHexPicker()
+    lumlist(hexx, hexy)
 })
 
 hexcanvas.addEventListener("click", e => {
     const rect = hexcanvas.getBoundingClientRect()
 
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
+    const hexx = e.clientX - rect.left
+    const hexy = e.clientY - rect.top
 
-    if (false && !pointInHexagon(x, y)) return
+    if (false && !pointInHexagon(hexx, hexy)) return
 
-    const pixel = hexctx.getImageData(x, y, 1, 1).data
-
-    const hex = rgbToHex(pixel[0], pixel[1], pixel[2])
-
+    const pixel = hexctx.getImageData(hexx, hexy, 1, 1).data
     colorUpdate(pixel)
 
     // Selection marker
-    drawHexPicker()
+    drawHexPicker(hexx, hexy)
+    luminance.addEventListener("input", (event) => {
+        lumlist(hexx, hexy)
+    })
 })
 
 hexcanvas.addEventListener('mousemove', () => {
