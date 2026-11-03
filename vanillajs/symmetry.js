@@ -977,7 +977,7 @@ function autofill() {
 
 function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
   let areaNumber = 0
-  let areaMap = new Int16Array(width * width)
+  let areaMap = new Int32Array(width * width)
   let output = {}
   let wideFactor = Math.floor((width / 2 - 20) * Math.PI / Number(slider1) * 2.2)
   let xMin = Math.floor(width / 2 - wideFactor)
@@ -1021,8 +1021,9 @@ function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
       }
     }
     for (let i = 1; i <= areaNumber; i++) {
-        realoutputs.push(output[i])
+        realoutputs.push(output[i].flat())
     }    
+    return
   }
 
   // merge step combo x
@@ -1036,6 +1037,8 @@ function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
       if (x === width - fact) fact = 0
       if (areaMap[idx - width - fact] !== 0 && areaMap[idx - width - fact] != undefined) {
         prevNumber = areaMap[idx - width - fact]
+//      } else if (idx > 2 * width + fact && areaMap[idx - 2 * width - fact] !== 0 && areaMap[idx - 2 * width - fact] != undefined) {
+//        prevNumber = areaMap[idx - 2 * width - fact]
 //      } else if (x < width - 5 && areaMap[idx + 5] !== 0 && areaMap[idx + 4] != undefined) {
 //        prevNumber = areaMap[idx + 4]
       } else if (x < width - 1 && areaMap[idx + 1] !== 0 && areaMap[idx + 1] != undefined) {
@@ -1069,8 +1072,9 @@ function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
       }
     }
     for (let i = 1; i <= areaNumber; i++) {
-        realoutputs.push(output[i])
+        realoutputs.push(output[i].flat())
     }    
+    return
   }
 
   // merge step diagonals
@@ -1250,6 +1254,7 @@ function areaBasedSymmetry(realoutputs, fillableAreas, width) {
   let usedpoints = {}
   for (let i = 0; i < realoutputs.length; i++) {    
     if (usedpoints[i]) continue
+    if (!everyonespoints[i] || everyonespoints[i] === undefined) continue
     let [x, y] = everyonespoints[i]
     const symmetricPoints = getSymmetryPoints(x, y, false)
     let thisarea = []
