@@ -2,7 +2,8 @@
 
 let canvas = document.getElementById("drawCanvas")
 
-let dotess = 0
+let dotess = 0  // tessellation style
+let dograd = 0  // gradient style
 const notan = false
 const fillablesStyle = 1
 let getcanvas, ctx, prevX, prevY
@@ -158,6 +159,8 @@ function pointInHexagon(x, y) {
 
 // HSV -> RGB
 function hsvToRgb(h, s, v) {
+    if (s > 1) s /= 100
+    if (v > 1) v /= 100
     let c = v * s
     let x = c * (1 - Math.abs((h / 60) % 2 - 1))
     let m = v - c
@@ -177,6 +180,51 @@ function hsvToRgb(h, s, v) {
         b: Math.round((b+m)*255)
     }
 }
+
+function rgbToHsv(r, g, b) {
+    // 1. Normalize RGB values to the range 0-1
+    r /= 255
+    g /= 255
+    b /= 255
+
+    // 2. Find the maximum and minimum values to determine Chroma
+    const max = Math.max(r, g, b)
+    const min = Math.min(r, g, b)
+    const delta = max - min
+
+    let h = 0
+    let s = 0
+    const v = max
+
+    // 3. Calculate Saturation
+    if (max !== 0) {
+        s = delta / max
+    }
+
+    // 4. Calculate Hue
+    if (delta !== 0) {
+        switch (max) {
+            case r:
+                h = (g - b) / delta + (g < b ? 6 : 0)
+                break
+            case g:
+                h = (b - r) / delta + 2
+                break
+            case b:
+                h = (r - g) / delta + 4
+                break
+        }
+        h /= 6 // Convert to a fraction between 0 and 1
+    }
+
+    // 5. Scale to standard degrees and percentages
+    return {
+        h: Math.round(h * 360),    // 0° to 360°
+        s: Math.round(s * 100),    // 0% to 100%
+        v: Math.round(v * 100)     // 0% to 100%
+    };
+}
+
 
 // Render color wheel clipped to hexagon
 function drawHexPicker(inpx, inpy) {
@@ -318,9 +366,51 @@ function rgbToHex(r, g, b) {
   return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1).toUpperCase()}`
 }  
 
+function fillDataWrite(allcoords, alllength, data, usecolor) {
+  let total = [...allcoords].reduce((acc, curr, index) => {
+    if (index % 2 == 0) {
+      acc[0] += Number(curr)
+    } else {
+      acc[1] += Number(curr)
+    }
+    return acc
+  }, [0, 0])
+  let x = Math.round(total[0] * 2 / alllength)
+  let y = Math.round(total[1] * 2 / alllength)
+  let maxdist = 0
+  for (let k = 0; k < alllength; k += 2) {
+    let xx = allcoords[k]
+    let yy = allcoords[k + 1]
+    let thisdist = euclidDistance(x, y, xx, yy)
+    if (thisdist > maxdist) {
+      maxdist = thisdist
+    }
+  }        
+  for (let k = 0; k < alllength; k += 2) {
+    let xx = allcoords[k]
+    let yy = allcoords[k + 1]
+    let thisdist = euclidDistance(x, y, xx, yy)
+    let basehsv = rgbToHsv(usecolor.r, usecolor.g, usecolor.b)
+    if (dograd === 1) {
+      basehsv.h = basehsv.h - 60 * thisdist / maxdist
+    } else if (dograd === 2) {
+      basehsv.s = 0.6 * ( 1 - thisdist / maxdist) + 0.4
+    } else if (dograd === 3) {
+      basehsv.v = 0.6 * ( 1 - thisdist / maxdist) + 0.4
+    }
+    if (basehsv.h < 0) basehsv.h += 360
+    let tusecolor = hsvToRgb(basehsv.h, basehsv.s, basehsv.v)
+    const i = (yy * symmetry + xx) * 4
+    data[i]     = tusecolor.r
+    data[i + 1] = tusecolor.g
+    data[i + 2] = tusecolor.b
+    data[i + 3] = 255
+  }
+}
+
 function fill(e) {
   // fill areas with color 
-  let coord = getLocalCoordinates(e);
+  let coord = getLocalCoordinates(e)
   if (e.buttons == 1 || e.type == "touchmove") {
     let x = Math.floor(coord[0])
     let y = Math.floor(coord[1])
@@ -374,16 +464,7 @@ function fill(e) {
         idx = idx + 1
         let [allcoords, alllength] = getAdjacentWhite(data, Math.floor(prex), Math.floor(prey), symmetry, symmetry, false)
         //if (idx > 110 || (idx > 96 && idx < 104) || (idx > 64 && idx < 72)) {console.log(idx, allcoords)}
-        
-        for (let k = 0; k < alllength; k += 2) {
-          let xx = allcoords[k]
-          let yy = allcoords[k + 1]
-          const i = (yy * symmetry + xx) * 4
-          data[i]     = usecolor.r
-          data[i + 1] = usecolor.g
-          data[i + 2] = usecolor.b
-          data[i + 3] = 255
-        }
+        fillDataWrite(allcoords, alllength, data, usecolor)
       } else {
         // need to preserve location for every-other
         idx = idx + 1
@@ -708,16 +789,25 @@ function randomDraw() {
     // interlocking circles style
     console.log("circles style")
     let arcrad = 100
+    if (slider2.value > 8) arcrad = 50
+    ctx.beginPath()
     ctx.moveTo(xCenter + arcrad, xCenter)
     ctx.arc(xCenter, xCenter, arcrad, 0, Math.PI * 2)
     ctx.stroke()
-    let aroundfactor = 6
+    let aroundfactor = slider2.value
+    let overfactor = 4
+    let stepfactor = 1
+    if (aroundfactor > 8) {aroundfactor = slider2.value / 2; overfactor = 4; stepfactor = 2.5}
     // draw the circles within the zone
     for (let i = 0; i < aroundfactor; i++) {
-      for (let j = 1; j < 4; j++) {
+      for (let j = 1; j < overfactor; j++) {
+        // shake up multiples other than 6
+        // do it here so that everything is symmetric
+        let randangle = Math.PI / 8 - Math.random() * Math.PI / 4
+        if (true || slider2.value == 6) randangle = 0
         for (let k = 0; k < aroundfactor; k++) {
-          let x = Math.cos(i * Math.PI * 2 / aroundfactor) * arcrad * j + Math.cos(k * Math.PI * 2 / aroundfactor) * arcrad + xCenter
-          let y = Math.sin(i * Math.PI * 2 / aroundfactor) * arcrad * j + Math.sin(k * Math.PI * 2 / aroundfactor) * arcrad + xCenter
+          let x = Math.cos(i * Math.PI * 2 / aroundfactor + randangle) * arcrad * j * stepfactor + Math.cos(k * Math.PI * 2 / aroundfactor) * arcrad + xCenter
+          let y = Math.sin(i * Math.PI * 2 / aroundfactor + randangle) * arcrad * j * stepfactor + Math.sin(k * Math.PI * 2 / aroundfactor) * arcrad + xCenter
           ctx.moveTo(x + arcrad, y)
           ctx.arc(x, y, arcrad, 0, Math.PI * 2)
           ctx.stroke()      
@@ -726,11 +816,11 @@ function randomDraw() {
       // draw the breaks between the zones
       let x = Math.cos(i * Math.PI * 2 / aroundfactor) * xCenter + xCenter
       let y = Math.sin(i * Math.PI * 2 / aroundfactor) * xCenter + xCenter
+      ctx.beginPath()
       ctx.moveTo(xCenter, xCenter)
       ctx.lineTo(x, y)
-      ctx.stroke()
-      x = Math.cos((i + 1/2) * Math.PI * 2 / aroundfactor) * 3.5 / 5 * xCenter + xCenter
-      y = Math.sin((i + 1/2) * Math.PI * 2 / aroundfactor) * 3.5 / 5 * xCenter + xCenter
+      x = Math.round(Math.cos((i + 1/2) * Math.PI * 2 / aroundfactor) * 3.5 / 5 * xCenter + xCenter)
+      y = Math.round(Math.sin((i + 1/2) * Math.PI * 2 / aroundfactor) * 3.5 / 5 * xCenter + xCenter)
       ctx.moveTo(xCenter, xCenter)
       ctx.lineTo(x, y)
       ctx.stroke()
@@ -1624,26 +1714,56 @@ function stepThroughFillables(img2, fillableAreas, palArr, width) {
     if (palLocn >= palArr.length - 1) palLocn = 0
     if (altpal >= palArr.length - 1) altpal = 0
     for (let k = 0; k < fillableAreas[i].length; k++) {
+      let total = [...fillableAreas[i][k]].reduce((acc, curr, index) => {
+        if (index % 2 == 0) {
+          acc[0] += Number(curr)
+        } else {
+          acc[1] += Number(curr)
+        }
+        return acc
+      }, [0, 0])
+      let alllength = fillableAreas[i][k].length
+      let mx = Math.round(total[0] * 2 / alllength)
+      let my = Math.round(total[1] * 2 / alllength)
+      let maxdist = 0
+      for (let m = 0; m < alllength; m += 2) {
+        let xx = fillableAreas[i][k][m]
+        let yy = fillableAreas[i][k][m + 1]
+        let thisdist = euclidDistance(mx, my, xx, yy)
+        if (thisdist > maxdist) {
+          maxdist = thisdist
+        }
+      }        
       for (let j = 0; j < fillableAreas[i][k].length; j += 2) {
         if (!fillableAreas[i][k][j]) continue
         let x = fillableAreas[i][k][j]
         let y = fillableAreas[i][k][j + 1]      
         const l = (y * width + x) * 4
         // (k % 4 === 1 || k % 4 === 2)
-        if (slider2.value % 2 === 0 && k % 2 === 1) { //|| (notan && ((i % 2 === 0)))) {
+        let thisdist = euclidDistance(x, y, mx, my)
+        const conditional = slider2.value % 2 === 0 && k % 2 === 1
+        let basehsv
+        if (conditional) { //|| (notan && ((i % 2 === 0)))) {
         // if ((!notan && slider2.value % 2 == 0 && k % 2 === 1) || (notan && ((i % 2 === 0 && k % 2 === 0) ||
         // (i % 2 === 1 && k % 2 === 1)))) {
         //if (k > Math.floor(fillableAreas[i].length / 2)) {
-          data[l]     = altcolor.r
-          data[l + 1] = altcolor.g
-          data[l + 2] = altcolor.b
-          data[l + 3] = 255
+          basehsv = rgbToHsv(usecolor.r, usecolor.g, usecolor.b)
         } else {
-          data[l]     = usecolor.r
-          data[l + 1] = usecolor.g
-          data[l + 2] = usecolor.b
-          data[l + 3] = 255
+          basehsv = rgbToHsv(altcolor.r, altcolor.g, altcolor.b)
         }
+        if (dograd === 1) {
+          basehsv.h = basehsv.h - 60 * thisdist / maxdist
+        } else if (dograd === 2) {
+          basehsv.s = 0.6 * ( 1 - thisdist / maxdist) + 0.4
+        } else if (dograd === 3) {
+          basehsv.v = 0.6 * ( 1 - thisdist / maxdist) + 0.4
+        }
+        if (basehsv.h < 0) basehsv.h += 360
+        let tusecolor = hsvToRgb(basehsv.h, basehsv.s, basehsv.v)
+        data[l]     = tusecolor.r
+        data[l + 1] = tusecolor.g
+        data[l + 2] = tusecolor.b
+        data[l + 3] = 255
       }
     }
   }  
@@ -1729,6 +1849,24 @@ drawstyleButtons.forEach(radio => {
 })
 
 drawstyleButtons[0].checked = true
+
+const gradstyleButtons = document.querySelectorAll('input[name="gradstyle"]')
+
+gradstyleButtons.forEach(radio => {
+  radio.addEventListener('change', () => {
+    const gradButtonValue = document.querySelector('input[name="gradstyle"]:checked').value
+    dograd = 0
+    if (gradButtonValue === 'hue') {
+      dograd = 1
+    } else if (gradButtonValue === 'sat') {
+      dograd = 2
+    } else if (gradButtonValue === 'lum') {
+      dograd = 3
+    }
+  })
+})
+
+gradstyleButtons[0].checked = true
 
 sliderValueDisplay2.textContent = 16
 
