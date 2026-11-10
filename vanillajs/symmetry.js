@@ -378,6 +378,7 @@ function fillDataWrite(allcoords, alllength, data, usecolor) {
   let x = Math.round(total[0] * 2 / alllength)
   let y = Math.round(total[1] * 2 / alllength)
   let maxdist = 0
+  let maxdists = {}
   for (let k = 0; k < alllength; k += 2) {
     let xx = allcoords[k]
     let yy = allcoords[k + 1]
@@ -385,18 +386,24 @@ function fillDataWrite(allcoords, alllength, data, usecolor) {
     if (thisdist > maxdist) {
       maxdist = thisdist
     }
-  }        
+    let angle = Math.round(10 * Math.atan2(xx - x, yy - y))
+    if (!maxdists[angle] || maxdists[angle] < thisdist) {
+      maxdists[angle] = thisdist
+    }
+  }     
   for (let k = 0; k < alllength; k += 2) {
     let xx = allcoords[k]
     let yy = allcoords[k + 1]
     let thisdist = euclidDistance(x, y, xx, yy)
+    let angle = Math.round(10 * Math.atan2(xx - x, yy - y))
     let basehsv = rgbToHsv(usecolor.r, usecolor.g, usecolor.b)
     if (dograd === 1) {
-      basehsv.h = basehsv.h - 60 * thisdist / maxdist
+      basehsv.h = basehsv.h - 60 * thisdist / maxdists[angle]
+      //console.log(angle, maxdists[angle])
     } else if (dograd === 2) {
-      basehsv.s = 0.6 * ( 1 - thisdist / maxdist) + 0.4
+      basehsv.s = 0.8 * ( 1 - thisdist / maxdists[angle]) + 0.2
     } else if (dograd === 3) {
-      basehsv.v = 0.6 * ( 1 - thisdist / maxdist) + 0.4
+      basehsv.v = 0.8 * ( 1 - thisdist / maxdists[angle]) + 0.2
     }
     if (basehsv.h < 0) basehsv.h += 360
     let tusecolor = hsvToRgb(basehsv.h, basehsv.s, basehsv.v)
@@ -1726,12 +1733,17 @@ function stepThroughFillables(img2, fillableAreas, palArr, width) {
       let mx = Math.round(total[0] * 2 / alllength)
       let my = Math.round(total[1] * 2 / alllength)
       let maxdist = 0
+      let maxdists = []
       for (let m = 0; m < alllength; m += 2) {
         let xx = fillableAreas[i][k][m]
         let yy = fillableAreas[i][k][m + 1]
         let thisdist = euclidDistance(mx, my, xx, yy)
+        let angle = Math.round(10 * Math.atan2(xx - mx, yy - my))
         if (thisdist > maxdist) {
           maxdist = thisdist
+        }
+        if (!maxdists[angle] || maxdists[angle] < thisdist) {
+          maxdists[angle] = thisdist
         }
       }        
       for (let j = 0; j < fillableAreas[i][k].length; j += 2) {
@@ -1751,12 +1763,13 @@ function stepThroughFillables(img2, fillableAreas, palArr, width) {
         } else {
           basehsv = rgbToHsv(altcolor.r, altcolor.g, altcolor.b)
         }
+        let angle = Math.round(10 * Math.atan2(x - mx, y - my))
         if (dograd === 1) {
-          basehsv.h = basehsv.h - 60 * thisdist / maxdist
+          basehsv.h = basehsv.h - 60 * thisdist / maxdists[angle]
         } else if (dograd === 2) {
-          basehsv.s = 0.6 * ( 1 - thisdist / maxdist) + 0.4
+          basehsv.s = 0.8 * ( 1 - thisdist / maxdists[angle]) + 0.2
         } else if (dograd === 3) {
-          basehsv.v = 0.6 * ( 1 - thisdist / maxdist) + 0.4
+          basehsv.v = 0.8 * ( 1 - thisdist / maxdists[angle]) + 0.2
         }
         if (basehsv.h < 0) basehsv.h += 360
         let tusecolor = hsvToRgb(basehsv.h, basehsv.s, basehsv.v)
