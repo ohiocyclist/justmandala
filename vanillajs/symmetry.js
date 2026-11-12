@@ -633,7 +633,7 @@ function getSymmetryPoints(x, y, domirror=true) {
   return result
 }
 
-function drawLine(x1, y1, x2, y2) {
+function drawLine(x1, y1, x2, y2, skipcheck=false) {
   // connect a beginning and ending points
   const startPoints = getSymmetryPoints(x1, y1)
   const endPoints = getSymmetryPoints(x2, y2)
@@ -644,7 +644,8 @@ function drawLine(x1, y1, x2, y2) {
   ctx.lineCap = "round"
 
   for (var i = 0; i < startPoints.length; i++) {
-    if (euclidDistance(startPoints[i][0], startPoints[i][1], endPoints[i][0], endPoints[i][1]) < (xCenter * 1)) {
+    // skipcheck:  tessellation draw needs this check against long lines.  Some random draws need to NOT have this check.
+    if (skipcheck || euclidDistance(startPoints[i][0], startPoints[i][1], endPoints[i][0], endPoints[i][1]) < (xCenter * 1)) {
       ctx.moveTo(startPoints[i][0], startPoints[i][1])
       ctx.lineTo(endPoints[i][0], endPoints[i][1])
     }
@@ -686,6 +687,7 @@ function randomMandala(cx, cy, radius, mirrorFactor) {
     // Mirror around center
     // We don't need to draw all the mirrors, Copilot didn't
     // understand that the rest of the code takes care of that
+    const skipcheck = true
     for (let m = 0; m <= 0; m++) { //m < mirrorFactor; m++) {
         let a = (Math.PI * 2 * m) / mirrorFactor
         let cosA = Math.cos(a)
@@ -701,14 +703,15 @@ function randomMandala(cx, cy, radius, mirrorFactor) {
             let x2 = cx + p2.x * cosA - p2.y * sinA
             let y2 = cy + p2.x * sinA + p2.y * cosA
 
-            drawLine(x1, y1, x2, y2)
+            drawLine(x1, y1, x2, y2, skipcheck)
 
             // Optional reflection for denser mandalas
             drawLine(
                 cx + p1.x * cosA + p1.y * sinA,
                 cy + p1.x * sinA - p1.y * cosA,
                 cx + p2.x * cosA + p2.y * sinA,
-                cy + p2.x * sinA - p2.y * cosA
+                cy + p2.x * sinA - p2.y * cosA,
+                skipcheck
             )
         }
     }
@@ -764,25 +767,6 @@ function voronoiTrace(pointList) {
     }
   }
 }
-
-const fileInput = document.getElementById('fileInput')
-
-fileInput.addEventListener('change', function(event) {
-  const selectedFile = event.target.files[0]
-
-  if (selectedFile) {
-    const reader = new FileReader()
-    
-    reader.onload = (e) => {
-      const img = new Image()
-      img.src = e.target.result
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, symmetry, symmetry)    
-      }      
-    }
-    reader.readAsDataURL(selectedFile)
-  }
-})
 
 function randomDraw() {
   ctx.strokeStyle = color
@@ -969,7 +953,8 @@ function randomDraw() {
     // just a bunch of straight lines style
     ctx.strokeStyle = color
     let offset = 40 * Math.random()
-    drawLine(offset, xCenter - offset, xCenter, xCenter - offset)
+    const skipcheck = true
+    drawLine(offset, xCenter - offset, xCenter, xCenter - offset, skipcheck)
     for (let i = 0; i < 4; i++) {
       let usei = i
       // add another inner layer between 0 and 1
@@ -982,7 +967,7 @@ function randomDraw() {
       if (i === 2) {
           starty = startx
       }
-      drawLine(startx, starty, startx + offset, Math.abs(symmetry - starty))
+      drawLine(startx, starty, startx + offset, Math.abs(symmetry - starty), skipcheck)
     }
   } else if (randval < 0.84) {
     console.log("interlocking crossing lines")
@@ -993,6 +978,7 @@ function randomDraw() {
     let endy = 0    
     let startx = 0
     let starty = 0
+    const skipcheck = true
     for(let i = 0; i < workfactor - 3; i++) {
       ctx.strokeStyle = color
       // draw in the center to start, then push towards the edges
@@ -1015,7 +1001,7 @@ function randomDraw() {
       if (endy > symmetry - edgekeep) {
         endy = symmetry - edgekeep
       }
-      drawLine(startx, starty, endx, endy)
+      drawLine(startx, starty, endx, endy, skipcheck)
     }
   } else {
     console.log("edge to center push")
@@ -1919,4 +1905,23 @@ hexcanvas.addEventListener("click", e => {
 
 hexcanvas.addEventListener('mousemove', () => {
   hexcanvas.style.cursor = "url('dropper.png') 6 26, auto"
+})
+
+const fileInput = document.getElementById('fileInput')
+
+fileInput.addEventListener('change', function(event) {
+  const selectedFile = event.target.files[0]
+
+  if (selectedFile) {
+    const reader = new FileReader()
+    
+    reader.onload = (e) => {
+      const img = new Image()
+      img.src = e.target.result
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, symmetry, symmetry)    
+      }      
+    }
+    reader.readAsDataURL(selectedFile)
+  }
 })
