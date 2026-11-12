@@ -1179,7 +1179,7 @@ function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
 
   // 1. Helper function to find the absolute "boss" (root) of any area
   // This uses path compression, making future lookups near-instant O(1)
-  function findBoss(id, equivs) {
+  function findRootNode(id, equivs) {
     let root = id
     while (equivs[root]) {
       root = equivs[root]
@@ -1207,8 +1207,8 @@ function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
       if (leftArea > 0 && rightArea > 0 && leftArea !== rightArea) {
         
         // Find the ultimate boss of BOTH stripes
-        const bossLeft = findBoss(leftArea, equivs)
-        const bossRight = findBoss(rightArea, equivs)
+        const bossLeft = findRootNode(leftArea, equivs)
+        const bossRight = findRootNode(rightArea, equivs)
         
         // If they don't share the same ultimate boss yet, link them!
         if (bossLeft !== bossRight) {
@@ -1225,21 +1225,28 @@ function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
 
   const equivBuckets = {}
 
+  // invalidate seen areas
+  const deads = new Uint8Array(areaNumber + 1) // +1 to safely handle 1-based indexing
+  const undeads = new Uint8Array(areaNumber + 1)
+
   for (let j = 1; j <= areaNumber; j++) {
     // Always resolve to the absolute, ultimate root boss
-    const ultimateBoss = findBoss(j, equivs)
-    
+    const ultimateBoss = findRootNode(j, equivs)
+
     // If an area has no matches, it is its own ultimate boss (ultimateBoss === j)
     // We only want to group things if they actually belong to a multi-area cluster,
     // or you can group EVERYTHING by its boss. Let's group everything by its ultimate boss:
-    if (equivBuckets[ultimateBoss] === undefined) {
-      equivBuckets[ultimateBoss] = [j]
-    } else {
-      equivBuckets[ultimateBoss].push(j)
+    if (ultimateBoss !== j) {
+      if (equivBuckets[ultimateBoss] === undefined) {
+        equivBuckets[ultimateBoss] = [j]
+      } else {
+        equivBuckets[ultimateBoss].push(j)
+      }
+      // don't run both this and the boss together
+      undeads[j] = 1
     }
   }
 
-  // 2. Pre-flatten all output subarrays once -- O(N) flat pass
   const flatOutputs = new Array(areaNumber + 1)
   for (let i = 1; i <= areaNumber; i++) {
     const out = output[i]
@@ -1247,25 +1254,21 @@ function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
     flatOutputs[i] = (out && out.length > 2) ? out.flat() : null
   }
 
-  const deads = new Uint8Array(areaNumber + 1) // +1 to safely handle 1-based indexing
+  let matches
 
   for (let i = 1; i <= areaNumber; i++) {
-    //const currentFlat = flatOutputs[i]
+    //const currentFlat = flatOutputs[i];
     const currentFlat = output[i]
     
     if (currentFlat && !deads[i]) {
       // Start the tracking array for this group
       let combinedFlat = []
-      if (fillablesStyle) {
-        combinedFlat = [...currentFlat.flat()]
-      } else {
-        combinedFlat = [...currentFlat]
-      }
+      combinedFlat = [...currentFlat.flat()]
       
       if (combinedFlat.length < 2) continue
             
       // Look up pre-grouped matches instantly instead of looping over everything
-      const matches = equivBuckets[i]
+      matches = equivBuckets[i]
       if (matches) {
         for (let m = 0; m < matches.length; m++) {
           const j = matches[m]
@@ -1289,26 +1292,17 @@ function getAllWhiteAreas(bgdata, realoutputs, slider1, width) {
       // Push using the exact nesting structure from your original code: [[[x1, y1, ...]]]
 
       // exclusion zone
-      let maxval = 0
-      if (fillablesStyle) {
-        maxval = Math.max(...combinedFlat.slice(0, Math.min(combinedFlat.length, 65500)))
-      } else {
-        maxval = Math.max(...combinedFlat.slice(0, Math.min(combinedFlat.length, 65500)))
-      }
-      if (maxval > width - 2) {
-        //console.log(combinedFlat)
-        if (combinedFlat.length > 100000) {
-          //console.log("still exclude")
-          continue
-        }
+      let maxval = Math.max(...combinedFlat.slice(0, Math.min(combinedFlat.length, 65500)))
+      let minval = Math.min(...combinedFlat.slice(0, Math.min(combinedFlat.length, 65500)))
+      if (maxval > width - 2 || minval < 1 ) {
+        continue
       }
       
-      if (combinedFlat.length > 2) {
+      if (!undeads[i] && combinedFlat.length > 2) {
         realoutputs.push(combinedFlat)
       }
     }
   }
-
 }
 
 function areaBasedSymmetry(realoutputs, fillableAreas, width) {
