@@ -12,7 +12,8 @@ function drawLineShift(curx, cury, endx, endy, ctx, width, slider1, slider2, col
   // kite style random mandala does not use extraMirror but uses radial symmetry
   let extraMirror = false
   let nosym = false
-  drawLine(xCenter - curx, xCenter - cury, xCenter - endx, xCenter - endy, ctx, width, slider1, slider2, color, nosym, extraMirror)
+  const tessel = 'none'
+  drawLine(xCenter - curx, xCenter - cury, xCenter - endx, xCenter - endy, ctx, width, slider1, slider2, tessel, color, nosym, extraMirror)
 }
 
 function voronoiTrace(pointList, ctx, width, slider1, slider2, color) {
@@ -68,17 +69,98 @@ function voronoiTrace(pointList, ctx, width, slider1, slider2, color) {
   }
 }
 
+function randomCopilotMandala(cx, cy, radius, ctx, width, slider1, slider2, color) {
+    // this function provided by Microsoft Copilot
+    let points = []
+    let count = 5 + Math.floor(Math.random() * 6)
+
+    // Generate a random stroke in one wedge
+    for (let i = 0; i < count; i++) {
+        points.push({
+            x: Math.random() * radius,
+            y: (Math.random() - 0.6) * radius * 0.5
+        })
+    }
+
+    // Mirror around center
+    // We don't need to draw all the mirrors, Copilot didn't
+    // understand that the rest of the code takes care of that
+    for (let m = 0; m <= 0; m++) { //m < mirrorFactor; m++) {
+        let a = (Math.PI * 2 * m) / slider1
+        let cosA = Math.cos(a)
+        let sinA = Math.sin(a)
+
+        for (let i = 0; i < points.length - 1; i++) {
+            let p1 = points[i]
+            let p2 = points[i + 1]
+
+            let x1 = cx + p1.x * cosA - p1.y * sinA
+            let y1 = cy + p1.x * sinA + p1.y * cosA
+
+            let x2 = cx + p2.x * cosA - p2.y * sinA
+            let y2 = cy + p2.x * sinA + p2.y * cosA
+
+            drawLine(x1, y1, x2, y2, ctx, width, slider1, slider2, 'none', color)
+
+            // Optional reflection for denser mandalas
+            drawLine(
+                cx + p1.x * cosA + p1.y * sinA,
+                cy + p1.x * sinA - p1.y * cosA,
+                cx + p2.x * cosA + p2.y * sinA,
+                cy + p2.x * sinA - p2.y * cosA, 
+                ctx, width, slider1, slider2, 'none', color
+            )
+        }
+    }
+}
+
 export function randomDraw(width, slider1, slider2, ctx, color) {
     let xCenter = width / 2
     let holdColor = color
     // the user can draw the outline in any color they like but autodraw is black
     color = 'black'
     if (ctx) {
-      // eight styles of random mandala
+      // ten styles of random mandala
       let randNum = Math.random()
+      // randNum = 0.95
       let xCenter = Math.floor(width / 2)
-      if (randNum < 0.125) {
+      if (randNum < 0.1) {
+        console.log("copilot style")
+        randomCopilotMandala(xCenter, xCenter, xCenter, ctx, width, slider1, slider2, 'none', color)
+      } else if (randNum < 0.2) {
+        // interlocking circles style
+        console.log("circles style")
+        let arcrad = 100
+        ctx.moveTo(xCenter + arcrad, xCenter)
+        ctx.arc(xCenter, xCenter, arcrad, 0, Math.PI * 2)
+        ctx.stroke()
+        let aroundfactor = 6
+        // draw the circles within the zone
+        for (let i = 0; i < aroundfactor; i++) {
+          for (let j = 1; j < 4; j++) {
+            for (let k = 0; k < aroundfactor; k++) {
+              let x = Math.cos(i * Math.PI * 2 / aroundfactor) * arcrad * j + Math.cos(k * Math.PI * 2 / aroundfactor) * arcrad + xCenter
+              let y = Math.sin(i * Math.PI * 2 / aroundfactor) * arcrad * j + Math.sin(k * Math.PI * 2 / aroundfactor) * arcrad + xCenter
+              ctx.moveTo(x + arcrad, y)
+              ctx.arc(x, y, arcrad, 0, Math.PI * 2)
+              ctx.stroke()      
+            }
+          }
+          // draw the breaks between the zones
+          let x = Math.cos(i * Math.PI * 2 / aroundfactor) * xCenter + xCenter
+          let y = Math.sin(i * Math.PI * 2 / aroundfactor) * xCenter + xCenter
+          ctx.moveTo(xCenter, xCenter)
+          ctx.lineTo(x, y)
+          ctx.stroke()
+          x = Math.cos((i + 1/2) * Math.PI * 2 / aroundfactor) * 3.5 / 5 * xCenter + xCenter
+          y = Math.sin((i + 1/2) * Math.PI * 2 / aroundfactor) * 3.5 / 5 * xCenter + xCenter
+          ctx.moveTo(xCenter, xCenter)
+          ctx.lineTo(x, y)
+          ctx.stroke()
+        }
+      } else if (randNum < 0.3) {
         // geometric forms style
+        console.log('geometric forms style')
         for (let i = -10; i < xCenter - 150; i += 52) {
           // skew y for the broader spectrum
           let jend = 0
@@ -112,14 +194,15 @@ export function randomDraw(width, slider1, slider2, ctx, color) {
                             Math.sin(angle) * figscale + xCenter + i + j * figscale * 2 + jittersize]
               // circular keep-out
               if (getMandalaHelpers.euclidDistance(thislocs[0], thislocs[1], xCenter, xCenter) < xCenter && lastlocs[0] != 0) {
-                drawLine(lastlocs[0], lastlocs[1], thislocs[0], thislocs[1], ctx, width, slider1, slider2, color)
+                drawLine(lastlocs[0], lastlocs[1], thislocs[0], thislocs[1], ctx, width, slider1, slider2, 'none', color)
               }
               lastlocs = thislocs
             }
           }
         }
-      } else if (randNum < 0.25) {
+      } else if (randNum < 0.4) {
         // Voronoi style
+        console.log('voronoi style')
         let startPoints = [
             [xCenter + 0 - 100 * Math.random(), xCenter + 0 + 100 * Math.random()], 
             [xCenter + 0 + 100 * Math.random(), xCenter + 0 + 100 * Math.random()], 
@@ -153,15 +236,17 @@ export function randomDraw(width, slider1, slider2, ctx, color) {
             ]
         }
         let geoPoints = []
+        let tessel = 'none'
         for (let i = 0; i < startPoints.length; i++) {
-            const newPoints = getMandalaHelpers.getSymmetryPoints(startPoints[i][0], startPoints[i][1])
+            const newPoints = getMandalaHelpers.getSymmetryPoints(startPoints[i][0], startPoints[i][1], width, slider1, tessel)
             for (let j = 0; j < newPoints.length; j++) {
                 geoPoints.push(newPoints[j])
             }
         }
         voronoiTrace(startPoints, ctx, width, slider1, slider2, color)        
-      } else if (randNum < 0.375) {
+      } else if (randNum < 0.5) {
         // kite style, first worked out in Jupyter Notebook.  Original did not have access to the symmetry function so it has its own unused symmetry built in.
+        console.log('kite style')
         ctx.strokeStyle = color
         let endx = 0
         let endy = 0
@@ -278,8 +363,9 @@ export function randomDraw(width, slider1, slider2, ctx, color) {
             }
           }
         }
-      } else if (randNum < 0.5) {
+      } else if (randNum < 0.6) {
         // spiral style
+        console.log('spiral style')
         ctx.strokeStyle = color
         let endx = xCenter
         let endy = xCenter
@@ -318,33 +404,38 @@ export function randomDraw(width, slider1, slider2, ctx, color) {
             let pi = Math.PI
             let curendx = startx + step * Math.cos(pi * j / stepup)
             let curendy = starty - step * Math.sin(pi * j / stepup)
-            drawLine(curx, cury, curendx, curendy, ctx, width, slider1, slider2, color)
+            drawLine(curx, cury, curendx, curendy, ctx, width, slider1, slider2, 'none', color)
             curx = curendx
             cury = curendy
           }
           endx = startx
           endy = starty
         }
-      } else if (randNum < 0.625) {
+      } else if (randNum < 0.7) {
+        console.log('straight pattern')
         // straight pattern
         ctx.strokeStyle = color
-        let maxi = 10
+        let maxi = Math.round(8 * Math.random() + 2)
+        if (maxi < 3) maxi = 3
         for (let i = 0; i < maxi; i++) {
           // overlap with the line above
-          let splayfactor = 2
+          let splayfactor = 1.5 + Math.random()
+          splayfactor = 2
           // the last one doesn't have a line above to overlap with
           if (i === maxi - 1) splayfactor = 1
-          let stepfraction = 15
-          let startx = xCenter - (i + splayfactor) * (xCenter / stepfraction)
-          let endx = xCenter + (i + splayfactor) * (xCenter / stepfraction)
-          let yloc = xCenter - (i + 1) * (xCenter / stepfraction)
-          drawLine(startx, yloc, endx, yloc, ctx, width, slider1, slider2, color)
+          let stepfraction = maxi * 1.5
+          let startx = Math.round(xCenter - (i + splayfactor) * (xCenter / stepfraction))
+          let endx = Math.round(xCenter + (i + splayfactor) * (xCenter / stepfraction))
+          let yloc = Math.round(xCenter - (i + 1) * (xCenter / stepfraction))
+          //(x1, y1, x2, y2, ctx, width, slider1, slider2, tessel, color, nosym=false, extraMirror=true, dolimit=true) 
+          drawLine(startx, yloc, endx, yloc, ctx, width, slider1, slider2, 'none', color, false, true, false)
         }
-      } else if (randNum < 0.75) {
+      } else if (randNum < 0.8) {
         // just a bunch of straight lines style
+        console.log('straight lines pattern')
         ctx.strokeStyle = color
         let offset = 40 * Math.random()
-        drawLine(offset, xCenter - offset, xCenter, xCenter - offset, ctx, width, slider1, slider2, color)
+        drawLine(offset, xCenter - offset, xCenter, xCenter - offset, ctx, width, slider1, slider2, 'none', color, false, true, false)
         for (let i = 0; i < 4; i++) {
           let usei = i
           // add another inner layer between 0 and 1
@@ -357,10 +448,11 @@ export function randomDraw(width, slider1, slider2, ctx, color) {
           if (i === 2) {
               starty = startx
           }
-          drawLine(startx, starty, startx + offset, Math.abs(width - starty), ctx, width, slider1, slider2, color)
+          drawLine(startx, starty, startx + offset, Math.abs(width - starty), ctx, width, slider1, slider2, 'none', color, false, true, false)
         }
-      } else if (randNum < 0.875) {
+      } else if (randNum < 0.9) {
         // interlocking crossing lines style
+        console.log('interlocking crossing lines style')
         let workfactor = 12
         let ifactor = 2
         let startx = 0
@@ -389,10 +481,11 @@ export function randomDraw(width, slider1, slider2, ctx, color) {
           if (endy > width - edgekeep) {
             endy = width - edgekeep
           }
-          drawLine(startx, starty, endx, endy, ctx, width, slider1, slider2, color)
+          drawLine(startx, starty, endx, endy, ctx, width, slider1, slider2, 'none', color)
         }
       } else {
         // push from the edge to the center style
+        console.log('edge to center style')
         let yLocn = 20
         let xLocn = xCenter
         let yStep = 12
