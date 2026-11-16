@@ -13,9 +13,9 @@ jest.mock('../getlocalcoordinates.js', () => ({getMandalaHelpers: {
   hexToRgb: jest.fn(() => ({ r: 255, g: 0, b: 0 })),
   isWhite: jest.fn(() => true),
   getAdjacentWhite: jest.fn(() => [
-      [3, 4],
-      [4, 4],
-      [3, 5]
+      3, 4,
+      4, 4,
+      3, 5
     ])
 }}))
 

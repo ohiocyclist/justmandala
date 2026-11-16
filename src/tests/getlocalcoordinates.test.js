@@ -126,13 +126,11 @@ describe("getAdjacentWhite", () => {
     const result = getMandalaHelpers.getAdjacentWhite(pixels, 0, 0, width, height, "white");
 
     // Expect the top-left 2×2 block only
-    expect(result).toEqual(
-      expect.arrayContaining([
-        [0, 0], [1, 0],
-        [0, 1], [1, 1]
-      ])
-    );
-    expect(result.length).toBe(4);
+    expect(result).toEqual(new Int16Array([
+        0, 0, 0, 1,
+        1, 1, 1, 0
+    ]));
+    expect(result.length).toBe(8);
   });
 
   test("does not cross into non-white regions (default mode)", () => {
@@ -153,8 +151,14 @@ describe("getAdjacentWhite", () => {
     const result = getMandalaHelpers.getAdjacentWhite(pixels, 0, 0, width, height, "white");
 
     // Should NOT include the center pixel (1,1)
-    expect(result).not.toContainEqual([1, 1]);
-    expect(result.length).toBe(8);
+    // invalidated by the shift from [[x1, y1], [x2, y2]] to [x1, y1, x2, y2]
+    // expect(result).not.toContainEqual([1, 1]);
+    for (let i = 0; i < result.length; i += 2) {
+      if (result[i] === 1 && result[i + 1] === 1) {
+        throw new Error("forbidden pixel 1,1 found!")
+      }
+    }
+    expect(result.length).toBe(16);
   });
 
   test("fillOne mode: only matches the exact starting color", () => {
@@ -176,8 +180,14 @@ describe("getAdjacentWhite", () => {
     const result = getMandalaHelpers.getAdjacentWhite(pixels, 0, 0, width, height, "fillOne");
 
     // Should include all red pixels but not the green center
-    expect(result).not.toContainEqual([1, 1]);
-    expect(result.length).toBe(8);
+    // invalidated by the shift from [[x1, y1], [x2, y2]] to [x1, y1, x2, y2]
+    // expect(result).not.toContainEqual([1, 1]);
+    for (let i = 0; i < result.length; i += 2) {
+      if (result[i] === 1 && result[i + 1] === 1) {
+        throw new Error("forbidden pixel 1,1 found!")
+      }
+    }
+    expect(result.length).toBe(16);
   });
 
   test("respects bounds and does not crash at edges", () => {
@@ -191,12 +201,11 @@ describe("getAdjacentWhite", () => {
 
     const result = getMandalaHelpers.getAdjacentWhite(pixels, 0, 0, width, height, "white");
 
-    expect(result.length).toBe(4);
-    expect(result).toEqual(
-      expect.arrayContaining([
-        [0, 0], [1, 0],
-        [0, 1], [1, 1]
-      ])
+    expect(result.length).toBe(8);
+    expect(result).toEqual(new Int16Array([
+        0, 0, 0, 1,
+        1, 1, 1, 0
+    ])
     );
   });
 
@@ -218,7 +227,7 @@ describe("getAdjacentWhite", () => {
 
     const result = getMandalaHelpers.getAdjacentWhite(pixels, 1, 1, width, height, "white");
 
-    expect(result).toEqual([[1, 1]]);
+    expect(result).toEqual(new Int16Array([1, 1]));
   })
 
   test("euclid distance", () => {

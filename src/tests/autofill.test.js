@@ -15,6 +15,7 @@ jest.mock('../getlocalcoordinates.js', () => {
       isWhite: jest.fn(),
       getAdjacentWhite: jest.fn(),
       hexToRgb: jest.fn(),
+      euclidDistance: jest.fn()
     }
   };
 });
@@ -32,8 +33,30 @@ describe("getFillableAreas", () => {
     // Fake image data (RGBA)
     const bgdata = new Uint8ClampedArray(width * width * 4).fill(255);
 
+    // edge exclusion
+    for (let j = 0; j < 4; j++) {
+      for (let i = 0; i < width; i++) {
+        let idx = 0
+        if (j === 0) {
+          idx = i * 4
+        } else if (j === 1) {
+          idx = (i + width * (width - 1)) * 4
+        } else if (j === 2) {
+          idx = (width * i) * 4
+        } else {
+          idx = (width * i + width - 1) * 4
+        }
+        bgdata[idx] = 0
+        bgdata[idx + 1] = 0
+        bgdata[idx + 1] = 0
+      }
+    }
+
+    // Mock euclid distance
+    getMandalaHelpers.euclidDistance.mockReturnValue(2)
+
     // Mock symmetry points → always return one point
-    getMandalaHelpers.getSymmetryPoints.mockReturnValue([[5, 5], [4, 6]]);
+    getMandalaHelpers.getSymmetryPoints.mockReturnValue([[5, 5], [4, 6], [5, 6], [4, 5]]);
 
     // Mock white detection → always white
     getMandalaHelpers.isWhite.mockReturnValue(true);
@@ -42,10 +65,12 @@ describe("getFillableAreas", () => {
     getMandalaHelpers.getAdjacentWhite.mockReturnValue([[4, 5], [5, 5], [6, 5]]);
 
     const fillableAreas = [];
-    autoFill.getFillableAreas(width, slider1, bgdata, fillableAreas, radioValue);
+    autoFill.getAllFillable(width, slider1, bgdata, fillableAreas);
 
     expect(fillableAreas.length).toBeGreaterThan(0);
-    expect(fillableAreas[0]).toEqual([[4, 5], [5, 5], [6, 5]]);
+    const thecompare = [...fillableAreas[0][0]].slice(0, 6)
+    console.log('thecompare', thecompare)
+    expect(thecompare).toEqual([8, 1, 7, 1, 6, 1]);
   });
 
   test("does not add areas that touch excluded corners", () => {
@@ -55,21 +80,21 @@ describe("getFillableAreas", () => {
 
     const bgdata = new Uint8ClampedArray(width * width * 4).fill(255);
 
-    getMandalaHelpers.getSymmetryPoints.mockReturnValue([[0, 0]]);
+    getMandalaHelpers.getSymmetryPoints.mockReturnValue([[5, 5], [5, 6], [6, 5], [6, 6]]);
     getMandalaHelpers.isWhite.mockReturnValue(true);
 
     // Adjacent area includes a forbidden corner
-    getMandalaHelpers.getAdjacentWhite.mockReturnValue([[0, 0]]);
+    getMandalaHelpers.getAdjacentWhite.mockReturnValue([[5, 5], [5, 6], [6, 5], [6, 6]]);
 
     const fillableAreas = [];
-    autoFill.getFillableAreas(width, slider1, bgdata, fillableAreas, radioValue);
+    autoFill.getAllFillable(width, slider1, bgdata, fillableAreas);
 
     expect(fillableAreas.length).toBe(0);
   });
 });
 
 describe("stepThroughFillables", () => {
-  test("fills image data with palette colors", () => {
+  test("fills image data with palette and altpalette colors", () => {
     const width = 10;
 
     const img2 = {
@@ -81,11 +106,12 @@ describe("stepThroughFillables", () => {
       [[3, 3]]
     ];
 
-    const palArr = ["#ff0000", "#00ff00"];
+    const palArr = ["#ff0000", "#00ff00", "#ff00ff", "#00ffff", "#0000FF", "#FF8080"];
 
     getMandalaHelpers.hexToRgb.mockImplementation(hex => {
       if (hex === "#ff0000") return { r: 255, g: 0, b: 0 };
       if (hex === "#00ff00") return { r: 0, g: 255, b: 0 };
+      if (hex === "#FF8080") return { r: 255, g: 128, b: 128};
     });
 
     global.slider3 = 10; // required by function
