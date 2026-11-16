@@ -78,7 +78,8 @@ export class getMandalaHelpers {
   static getAdjacentWhite = (data, startX, startY, width, height, radioValue) => {
       // figure out what area we can fill
       // faster now, thanks to Copilot
-      const stack = new Int32Array(width * height * 2)
+      const maxStack = width * height * 4
+      const stack = new Int16Array(maxStack)
       let sp = 0
 
       startX = Math.floor(startX)
@@ -88,14 +89,19 @@ export class getMandalaHelpers {
       stack[sp++] = startY
 
       const visited = new Uint8Array(width * height)
-      const result = []
+      let result = new Int16Array(maxStack)
+      let index = 0
 
       let si = (startY * width + startX) * 4
       let curColorR = data[si]
       let curColorG = data[si + 1]
       let curColorB = data[si + 2]
 
-      while (sp > 0) {
+      while (sp > 1) {
+        if (sp > maxStack - 2) {
+          console.error('getAdjacentWhite exhausted stack')
+          sp = maxStack - 2
+        }
         const y = stack[--sp]
         const x = stack[--sp]
 
@@ -115,7 +121,8 @@ export class getMandalaHelpers {
           if (!(r > 215 && g > 215 && b > 215)) continue
         }
 
-        result.push([x, y])
+        result[index++] = x
+        result[index++] = y
 
         stack[sp++] = x + 1; stack[sp++] = y
         stack[sp++] = x - 1; stack[sp++] = y
@@ -123,7 +130,8 @@ export class getMandalaHelpers {
         stack[sp++] = x;     stack[sp++] = y - 1
       }
 
-      return result;
+      result = result.slice(0, index)
+      return result
 
   }
 

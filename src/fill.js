@@ -15,8 +15,8 @@ export default function fill(e, x, y, ctx, color, width, slider1, radioValue) {
     const refb = da[2]      
     // help target small areas
     if (allcoords.length < 1000) {
-      for (let i = 0; i < allcoords.length; i += 4) {
-        let thispoints = getMandalaHelpers.getSymmetryPoints(allcoords[i][0], allcoords[i][1], width, slider1)
+      for (let i = 0; i < Math.min(allcoords.length, 400); i += 8) {
+        let thispoints = getMandalaHelpers.getSymmetryPoints(allcoords[i], allcoords[i + 1], width, slider1)
         symmetricPoints = [...symmetricPoints, ...thispoints]
       }
     } else {
@@ -43,7 +43,9 @@ export default function fill(e, x, y, ctx, color, width, slider1, radioValue) {
         //console.log("pixel not white")
       }
     
-      for (const [x, y] of allcoords) {
+      for (let j = 0; j < allcoords.length; j += 2) {
+        let x = allcoords[j]
+        let y = allcoords[j + 1]
         const i = (y * width + x) * 4
         data[i]     = usecolor.r
         data[i + 1] = usecolor.g

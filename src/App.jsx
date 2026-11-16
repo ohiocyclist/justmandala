@@ -107,9 +107,9 @@ function JustMandala() {
   // run this once on startup.  Don't worry about resizes or rotations, let the user reload if they want
   // choose a size on landscape vs portrait
   const [width, setWidth] = useState(() => {if (window.innerWidth > window.innerHeight) {
-      return window.innerHeight - 120
+      return Math.min(1000, window.innerHeight - 120)
     } else {
-      return window.innerWidth - 60
+      return Math.min(1000, window.innerWidth - 60)
     }})
 
   let color = currentColor
