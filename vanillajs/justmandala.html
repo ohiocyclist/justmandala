@@ -9,6 +9,125 @@
     <style>
       .colorbutton { color: white; border: none; padding: 15px 32px; cursor: pointer; border-radius: 5px; } 
       .pop-out {transform: scale(1.15);box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.3);}
+      :root {
+        --bg: #242424;
+        --panel: #1e1e1e;
+        --panel2: #2b2b2b;
+        --text: #e5e7eb;
+        --accent: #4f46e5;
+        --border: #3a3a3a;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        padding: 20px;
+      }
+
+      canvas {
+        background: white;
+        border-radius: 12px;
+      }
+
+      .control-panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        margin-top: 12px;
+      }      
+      .btn {
+        padding: 10px 18px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: .2s;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+      }
+
+      .btn-primary {
+        background: #0d6efd;
+        color: white;
+      }
+
+      .btn-success {
+        background: #198754;
+        color: white;
+      }
+
+      .btn-warning {
+        background: #ffc107;
+        color: black;
+      }
+
+      .btn-danger {
+        background: #dc3545;
+        color: white;
+      }      
+
+      .drawer {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        margin: 12px 0;
+        padding: 12px;
+      }
+
+      .drawer summary {
+        cursor: pointer;
+        font-size: 1.1rem;
+        font-weight: 700;
+      }
+
+      .drawer[open] summary {
+        margin-bottom: 12px;
+      }      
+
+      input[type="radio"] {
+        display: none;
+      }
+
+      .radio-btn {
+        display: inline-block;
+        padding: 8px 14px;
+        margin: 4px;
+        border: 1px solid #495057;
+        border-radius: 8px;
+        background: #343a40;
+        color: white;
+        cursor: pointer;
+        transition: .2s;
+      }
+
+      .radio-btn:hover {
+        background: #495057;
+      }
+
+      input[type="radio"]:checked + .radio-btn {
+        background: #0d6efd;
+        border-color: #0d6efd;
+        color: white;
+      }      
+
+      input[type="file"]::file-selector-button {
+          background: #0d63fd;
+          color: white;
+          border: none;
+          padding: 10px 18px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 600;
+      }
+
+      input[type="file"]::file-selector-button:hover {
+          background: #0432A0;
+      }      
     </style>    
     <title>JustMandala - Let's Chill Out!</title>
   </head>
@@ -27,46 +146,54 @@
     <h3>Mirror Factor: <span id="sliderValue2"></span></h3>
     <input type="range" id="mySlider2" min="2" max="50" value="16" style="width: 450px">
     <div>
-    <button id="loadButton">Clear Canvas</button>
-    <button id="randButton">Random Draw</button>
-    <button id="autofill">Auto Fill</button>
-    <button id="notan">Notan</button>
+    <button id="loadButton" class="btn btn-danger">Clear Canvas</button>
+    <button id="randButton" class="btn btn-primary">Random Draw</button>
+    <button id="autofill" class="btn btn-success">Auto Fill</button>
+    <button id="notan" class="btn btn-warning">Notan</button>
     </div><div style="display: flex">
     <div style="margin-right: 20px">
-    Toggle Pointer Type: 
-    <input type="radio" name="pointer" value="draw" id="draw"><label for="draw">Draw</label>
-    <input type="radio" name="pointer" value="fill" id="fill"><label for="fill">Fill</label>
-    <input type="radio" name="pointer" value="drop" id="drop"><label for="drop">Color Dropper</label>
+    <details class="drawer" open>
+      <summary>Toggle Pointer Type</summary>
+      <input type="radio" name="pointer" value="draw" id="draw"><label for="draw" class="radio-btn">Draw</label>
+      <input type="radio" name="pointer" value="fill" id="fill"><label for="fill" class="radio-btn">Fill</label>
+      <input type="radio" name="pointer" value="drop" id="drop"><label for="drop" class="radio-btn">Color Dropper</label>
+    </details>
     </div><div style="margin-right: 20px">
-    Toggle Fill Type:
-    <input type="radio" name="fillstyle" value="every" id="every"><label for="every">Every Symmetric</label>
-    <input type="radio" name="fillstyle" value="other" id="other"><label for="other">Every Other Symmetric</label>
-    <input type="radio" name="fillstyle" value="one" id="one"><label for="one">Just the clicked area</label>
+    <details class="drawer" closed>
+      <summary>Toggle Fill Type</summary>
+      <input type="radio" name="fillstyle" value="every" id="every"><label for="every" class="radio-btn">Every Symmetric</label>
+      <input type="radio" name="fillstyle" value="other" id="other"><label for="other" class="radio-btn">Every Other Symmetric</label>
+      <input type="radio" name="fillstyle" value="one" id="one"><label for="one" class="radio-btn">Just the clicked area</label>
+    </details>
     </div><div style="margin-right: 20px">
-    Toggle Gradient Type:
-    <input type="radio" name="gradstyle" value="none" id="none"><label for="none">No Gradient</label>
-    <input type="radio" name="gradstyle" value="hue" id="hue"><label for="hue">Hue</label>
-    <input type="radio" name="gradstyle" value="sat" id="sat"><label for="sat">Saturation</label>
-    <input type="radio" name="gradstyle" value="lum" id="lum"><label for="lum">Luminance</label>
+    <details class="drawer" closed>
+      <summary>Toggle Gradient Type</summary>
+      <input type="radio" name="gradstyle" value="none" id="none"><label for="none" class="radio-btn">No Gradient</label>
+      <input type="radio" name="gradstyle" value="hue" id="hue"><label for="hue" class="radio-btn">Hue</label>
+      <input type="radio" name="gradstyle" value="sat" id="sat"><label for="sat" class="radio-btn">Saturation</label>
+      <input type="radio" name="gradstyle" value="lum" id="lum"><label for="lum" class="radio-btn">Luminance</label>
+    </details>
     </div><div style="margin-right: 20px">
-    Toggle Draw Type:
-    <input type="radio" name="drawstyle" value="regular" id="regular"><label for="regular">No Tessellation</label>
-    <input type="radio" name="drawstyle" value="tessel" id="tessel"><label for="tessel">Tessellation</label>
-    <input type="radio" name="drawstyle" value="double" id="double"><label for="double">Double Tessellation</label>
-    <input type="radio" name="drawstyle" value="recenter" id="recenter"><label for="recenter">Tessellation Center</label>
+    <details class="drawer" closed>
+      <summary>Toggle Draw Type</summary>
+      <input type="radio" name="drawstyle" value="regular" id="regular"><label for="regular" class="radio-btn">No Tessellation</label>
+      <input type="radio" name="drawstyle" value="tessel" id="tessel"><label for="tessel" class="radio-btn">Tessellation</label>
+      <input type="radio" name="drawstyle" value="double" id="double"><label for="double" class="radio-btn">Double Tessellation</label>
+      <input type="radio" name="drawstyle" value="recenter" id="recenter"><label for="recenter" class="radio-btn">Tessellation Center</label>
+    </details>
     </div>
     </div>
     <div>
-    <h4>
-    Flexible Color:
-    </h4>
-    </div>
-    <div>
+    <details class="drawer" open>
+    <summary>
+    Flexible Color
+    </summary>
       <div>
       <canvas id="picker" width="600" height="600"></canvas>      
       </div><div>
       Luminance: <input type="range" id="luminance" min="0" max="255" value="127" style="width: 150px">
       </div>
+    </details>
     </div>
     <div>
       Reload a Mandala:

@@ -1,6 +1,11 @@
+"use strict";
+
 function randomCopilotMandala(cx, cy, radius, mirrorFactor) {
     // this function provided by Microsoft Copilot
+    // prompt:  assume that you have a function drawline(x1, y1, x2, y2) that draws a line from x1,y1 to x2,y2 and a mirrorfactor variable that tells your function how many times it will be radially mirrored, write a short random mandala function
     let points = []
+    // I edited the hyperparameters.  This is Copilot's original.
+    // let count = 3 + Math.floor(Math.random() * 5)
     let count = 5 + Math.floor(Math.random() * 6)
 
     // Generate a random stroke in one wedge
@@ -8,6 +13,7 @@ function randomCopilotMandala(cx, cy, radius, mirrorFactor) {
         points.push({
             x: Math.random() * radius,
             y: (Math.random() - 0.6) * radius * 0.5
+            // originally Math.random() - 0.5, edited to push more to the center
         })
     }
 
