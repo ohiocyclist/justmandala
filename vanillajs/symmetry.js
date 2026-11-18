@@ -27,6 +27,7 @@ let luminance = document.getElementById("luminance")
 let hexx = hexCenterX
 let hexy = hexCenterX
 const hexwidth = 600 // must match html
+let flexref = ''
 
 /**
  *  Colors button event listner example
@@ -42,11 +43,17 @@ const myDiv = document.getElementById('colorbuttons')
 // programmatically create as well as wire up the buttons
 for (let i = 0; i < colorlist.length; i++) {
   const button = document.createElement('button')
+  if (colorlist[i][0] === 'flex') {
+    flexref = button
+  }
   button.id = colorlist[i][0]
   button.style.backgroundColor = colorlist[i][1]
   if (colorlist[i][0] === 'eraser') {
     button.style.color = 'black'
     button.innerText = colorlist[i][0]
+  } else {
+    button.style.color = colorlist[i][1]
+    button.innerText = colorlist[i][0].slice(0, 4)
   }
   button.style.padding = '15px 32px'
   button.style.borderRadius = '5px'
@@ -513,6 +520,8 @@ function colorUpdate(data) {
   for (let i = 0; i < colorlist.length; i++) {
     if (colorlist[i][0] === 'flex') {
       colorlist[i][1] = rgbToHex(data[0], data[1], data[2])
+      // keep the text hidden
+      flexref.style.color = colorlist[i][1]
       break
     }
   }
