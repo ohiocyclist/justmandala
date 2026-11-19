@@ -1,5 +1,158 @@
 "use strict";
 
+const moveconst = 5
+
+const defaultGene = {
+    sectors: 12,
+    strokeCount: 800,
+    branchProbability: 0.3,
+    segmentLength: 3,
+    curvature: 0.5,
+    direction: 0.7,
+    length: 15,
+    lenarr: [],
+    dirarr: [],
+    movarr: []
+}
+// initialize the gene
+let prevlen = defaultGene.length
+let prevdir = defaultGene.direction + random(defaultGene.curvature, -defaultGene.curvature)
+for (let i = 0; i < defaultGene.strokeCount; i++) {
+  let nlen = prevlen + Math.round(5 * Math.random() - 2)
+  if (nlen < 2) nlen = 2
+  defaultGene.lenarr.push(nlen)
+  defaultGene.dirarr.push(prevdir + random(defaultGene.curvature, -defaultGene.curvature))
+  let thismove = moveconst
+  //if (Math.random() < 0.2) thismove = 0
+  defaultGene.movarr.push(thismove)
+  prevlen = defaultGene.lenarr[i]
+  prevdir = defaultGene.dirarr[i]
+}
+
+function random(left, right) {
+  if (Math.random() > 0.5) {
+    return right
+  }
+  return left
+}
+
+function drawEvoLine(p1, p2) {
+  ctx.lineWidth = Number(sliderValueDisplay.textContent)
+
+  ctx.beginPath()
+  ctx.lineCap = "round"
+  ctx.moveTo(p1.x, p1.y)
+  ctx.lineTo(p2.x, p2.y)
+  ctx.stroke()
+}
+
+function grow(cell, genes) {
+
+    const newDirection = genes.dirarr[cell.generation]
+
+    const nx =
+        cell.x +
+        genes.movarr[cell.generation] +
+        Math.cos(newDirection) *
+        genes.segmentLength
+
+    const ny =
+        cell.y +
+        -genes.movarr[cell.generation] +
+        Math.sin(newDirection) *
+        genes.segmentLength
+
+    let nlen = genes.lenarr[cell.generation]
+
+    const child = {
+        curvature: cell.curvature,
+        x: nx,
+        y: ny,
+        direction: newDirection,
+        generation: cell.generation + 1,
+        length: nlen
+    }
+
+    /*
+    drawMirrored({
+        px: cell.x,
+        py: cell.y,
+        x: nx,
+        y: ny
+    }, genes.sectors)
+    */
+    return child
+}
+
+function randomCopilotEvolver(thisGene) {
+  const growthPoints = []
+  let thisCell = {direction: thisGene.direction, curvature: thisGene.curvature, x: xCenter, y: xCenter, length: thisGene.length, generation: 0}
+  growthPoints.push(thisCell)
+  for (let i = 0; i < thisGene.strokeCount; i++) {
+    thisCell = grow(thisCell, thisGene)
+    growthPoints.push(thisCell)
+  }
+  for (let stroke of growthPoints) {
+
+      let angle =
+          stroke.direction +
+          random(-thisGene.curvature, thisGene.curvature);
+
+      let length =
+          stroke.length
+
+      let next = {
+          x: stroke.x + Math.cos(angle) * length,
+          y: stroke.y + Math.sin(angle) * length,
+          px: stroke.x,
+          py: stroke.y
+      }
+
+      drawMirrored(next, thisGene.sectors)
+  }  
+}
+
+function rotatePoint(x, y, a) {
+    return {
+        x: (x * Math.cos(a) - y * Math.sin(a)) / 15 + xCenter,
+        y: (x * Math.sin(a) + y * Math.cos(a)) / 15 + xCenter
+    }
+}
+
+function crossover(a, b) {
+  let child = {}
+
+  for (let key in a) {
+
+      child[key] =
+          Math.random() < 0.5
+              ? a[key]
+              : b[key]
+  }
+
+  return child
+}
+
+function drawMirrored(next, sectors) {
+
+    const step = Math.PI * 2 / sectors
+
+    for (let i = 0; i < sectors; i++) {
+
+        const rot = i * step
+
+        drawEvoLine(
+            rotatePoint(next.px, next.py, rot),
+            rotatePoint(next.x, next.y, rot),
+        )
+
+        drawEvoLine(
+            rotatePoint(-next.px, next.py, rot),
+            rotatePoint(-next.x,  next.y, rot),
+        )
+    }
+}
+
 function randomCopilotMandala(cx, cy, radius, mirrorFactor) {
     // this function provided by Microsoft Copilot
     // prompt:  assume that you have a function drawline(x1, y1, x2, y2) that draws a line from x1,y1 to x2,y2 and a mirrorfactor variable that tells your function how many times it will be radially mirrored, write a short random mandala function
@@ -106,7 +259,9 @@ function randomDraw() {
   ctx.lineWidth = Number(sliderValueDisplay.textContent)
   // five styles of random mandala
   const randval = Math.random()
-  if (randval < 0.12) {
+  if (true) {
+    randomCopilotEvolver(defaultGene)
+  } else if (randval < 0.12) {
     console.log("copilot style")
     randomCopilotMandala(xCenter, xCenter, xCenter, slider2.value)
   } else if (randval < 0.24) {
