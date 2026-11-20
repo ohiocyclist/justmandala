@@ -2,6 +2,7 @@
 
 const moveconst = 6
 
+const genecache = [0, 0, 0, 0, 0, 0, 0, 0, 0]
 const defaultGene = {
     sectors: 12,
     strokeCount: 120,
@@ -12,11 +13,16 @@ const defaultGene = {
     length: 15,
     lenarr: [],
     dirarr: [],
-    movarr: []
+    movarr: [],
+    didinit: false
 }
 
 // initialize the gene
 function geneInit(theGene) {
+  theGene.didinit = true
+  theGene.segmentLength = 5 + Math.round(4 * Math.random())
+  theGene.curvature = 0.5 + 0.7 * Math.random()
+  theGene.length = 10 + Math.round(10 * Math.random())
   let prevlen = theGene.length
   let prevdir = theGene.direction + randomLR(theGene.curvature, -theGene.curvature)
   for (let i = 0; i < theGene.strokeCount; i++) {
@@ -33,6 +39,25 @@ function geneInit(theGene) {
     theGene.movarr.push(thismove)
     prevlen = theGene.lenarr[i]
     prevdir = theGene.dirarr[i]
+  }
+}
+
+function crossover(mom, dad, child) {
+  const mutationrate = 0.05
+  for (let key in mom) {
+    if (key.includes('arr')) {
+      child[key] = []
+      for (let i = 0; i < mom[key].length; i++) {
+        let orig = randomLR(mom[key][i], dad[key][i])
+        if (Math.random() < mutationrate) {
+          child[key].push(orig * (0.9 + 0.2 * Math.random()))
+        } else {
+          child[key].push(orig)
+        }
+      }
+    } else {
+      child.key = randomLR(mom.key, dad.key)
+    }
   }
 }
 
@@ -139,20 +164,6 @@ function rotatePoint(x, y, a) {
         x: (x * Math.cos(a) - y * Math.sin(a)) / 1 + xCenter,
         y: (x * Math.sin(a) + y * Math.cos(a)) / 1 + xCenter
     }
-}
-
-function crossover(a, b) {
-  let child = {}
-
-  for (let key in a) {
-
-      child[key] =
-          Math.random() < 0.5
-              ? a[key]
-              : b[key]
-  }
-
-  return child
 }
 
 function drawMirrored(next, sectors, ctxnumber) {
@@ -278,7 +289,7 @@ function voronoiTrace(pointList) {
   }
 }
 
-function randomDraw() {
+function randomDraw(momGene, dadGene) {
   load()
   for (let i = 0; i < 9; i++) {
     ctx[i].strokeStyle = color
@@ -289,9 +300,17 @@ function randomDraw() {
   if (true) {
     for (let i = 0; i < 9; i++) {
       let myGene = structuredClone(defaultGene)
-      geneInit(myGene)
+      if (i < 6 && momGene.didinit && dadGene.didinit) {
+        crossover(momGene, dadGene, myGene)
+      } else {
+        geneInit(myGene)
+      }
+      genecache[i] = myGene
       randomCopilotEvolver(myGene, i)
+      selectedref[i] = 0
     }
+    document.querySelectorAll('canvas[id^="drawCanvas"]')
+        .forEach(d => d.classList.remove("selected-canvas"));    
   } else if (randval < 0.12) {
     console.log("copilot style")
     randomCopilotMandala(xCenter, xCenter, xCenter, slider2.value)
@@ -562,6 +581,22 @@ function randomDraw() {
   }
 }
 
-document.getElementById("shufButton").addEventListener("click", randomDraw)
+document.getElementById("shufButton").addEventListener("click", () => {
+  let momloc = -1
+  let dadloc = -1
+  for (let i = 0; i < 9; i++) {
+    if (selectedref[i]) {
+      if (momloc < 0) {
+        momloc = i
+      } else {
+        dadloc = i
+        break
+      }
+    }
+  }
+  if (dadloc > 0) {
+    randomDraw(structuredClone(genecache[momloc]), structuredClone(genecache[dadloc]))
+  }
+})
 
-randomDraw()
+randomDraw(defaultGene, defaultGene)

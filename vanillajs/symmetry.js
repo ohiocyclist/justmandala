@@ -27,6 +27,7 @@ const radius = 220
 let flexref = ''
 
 const selectedref = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+let firstround = true
 
 /**
  * To reset the canvas, simply run the load function
@@ -52,10 +53,13 @@ function load() {
     let scale = 1
     let isPinching = false
 
-    // fill areas with a click without moving the mouse, draw on movement
-    canvas[i].addEventListener("mousedown", (event) => evoselect(event, i))
-    canvas[i].addEventListener("touchstart", (event) => evoselect(event, i))
+    // select by clicking on a tile
+    if (firstround) {
+      canvas[i].addEventListener("mousedown", (event) => evoselect(event, i))
+      canvas[i].addEventListener("touchstart", (event) => evoselect(event, i))
+    }
   }
+  firstround = false
 }
 
 function evoselect(event, i) {
