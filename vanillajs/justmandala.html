@@ -28,7 +28,15 @@
 
       canvas {
         background: white;
-        border-radius: 12px;
+      }
+
+      .acan {
+        margin-left: 5px;
+        border: 3px solid transparent;
+      }
+
+      .selected-canvas {
+        outline: 3px solid red;
       }
 
       .control-panel {
@@ -129,15 +137,77 @@
           background: #0432A0;
       }      
     </style>    
-    <title>JustMandala - Let's Chill Out!</title>
+    <title>Evolutionary Mandala -- Choose Your Way to Success!</title>
   </head>
   <body class="box-border w-screen h-screen">
-    <div>
-      <canvas
-        id="drawCanvas"
-        width="1000"
-        height="1000"
-      ></canvas>
+    <div style="display: flex">
+      <div class="acan">
+        <canvas
+          id="drawCanvas00"
+          width="300"
+          height="300"
+        ></canvas>
+      </div>
+      <div class="acan">
+        <canvas
+          id="drawCanvas01"
+          width="300"
+          height="300"
+        ></canvas>
+      </div>
+      <div class="acan">
+        <canvas
+          id="drawCanvas02"
+          width="300"
+          height="300"
+        ></canvas>
+      </div>
+    </div>
+    <div style="display: flex">
+      <div class="acan">
+        <canvas
+          id="drawCanvas10"
+          width="300"
+          height="300"
+        ></canvas>
+      </div>
+      <div class="acan">
+        <canvas
+          id="drawCanvas11"
+          width="300"
+          height="300"
+        ></canvas>
+      </div>
+      <div class="acan">
+        <canvas
+          id="drawCanvas12"
+          width="300"
+          height="300"
+        ></canvas>
+      </div>
+    </div>
+    <div style="display: flex">
+      <div class="acan">
+        <canvas
+          id="drawCanvas20"
+          width="300"
+          height="300"
+        ></canvas>
+      </div>
+      <div class="acan">
+        <canvas
+          id="drawCanvas21"
+          width="300"
+          height="300"
+        ></canvas>
+      </div>
+      <div class="acan">
+        <canvas
+          id="drawCanvas22"
+          width="300"
+          height="300"
+        ></canvas>
+      </div>
     </div>
     <h3>Brush Color:</h3>
     <div id='colorbuttons'></div>
