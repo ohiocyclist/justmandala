@@ -44,7 +44,7 @@ function randomLR(left, right) {
 }
 
 function drawEvoLine(p1, p2, ctxnumber) {
-  ctx[ctxnumber].lineWidth = Number(sliderValueDisplay.textContent)
+  ctx[ctxnumber].lineWidth = 4
 
   ctx[ctxnumber].beginPath()
   ctx[ctxnumber].lineCap = "round"
@@ -279,8 +279,11 @@ function voronoiTrace(pointList) {
 }
 
 function randomDraw() {
-  ctx.strokeStyle = color
-  ctx.lineWidth = Number(sliderValueDisplay.textContent)
+  load()
+  for (let i = 0; i < 9; i++) {
+    ctx[i].strokeStyle = color
+    ctx[i].lineWidth = 4
+  }
   // five styles of random mandala
   const randval = Math.random()
   if (true) {
@@ -559,4 +562,6 @@ function randomDraw() {
   }
 }
 
-document.getElementById("randButton").addEventListener("click", randomDraw)
+document.getElementById("shufButton").addEventListener("click", randomDraw)
+
+randomDraw()

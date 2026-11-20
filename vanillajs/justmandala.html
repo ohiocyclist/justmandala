@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=0.4" />
     <script src="symmetry.js" defer></script>
-    <script src="autofill.js" defer></script>
     <script src="randomdraw.js" defer></script>
     <style>
       .colorbutton { color: white; border: none; padding: 15px 32px; cursor: pointer; border-radius: 5px; } 
@@ -209,65 +208,6 @@
         ></canvas>
       </div>
     </div>
-    <h3>Brush Color:</h3>
-    <div id='colorbuttons'></div>
-    <h3>Brush Size: <span id="sliderValue"></span></h3>    
-    <input type="range" id="mySlider" min="2" max="24" value="4" style="width: 300px">
-    <h3>Mirror Factor: <span id="sliderValue2"></span></h3>
-    <input type="range" id="mySlider2" min="2" max="50" value="16" style="width: 450px">
-    <div>
-    <button id="loadButton" class="btn btn-danger">Clear Canvas</button>
-    <button id="randButton" class="btn btn-primary">Random Draw</button>
-    <button id="autofill" class="btn btn-success">Auto Fill</button>
-    <button id="notan" class="btn btn-warning">Notan</button>
-    </div><div style="display: flex">
-    <div style="margin-right: 20px">
-    <details class="drawer" open>
-      <summary>Toggle Pointer Type</summary>
-      <input type="radio" name="pointer" value="draw" id="draw"><label for="draw" class="radio-btn">Draw</label>
-      <input type="radio" name="pointer" value="fill" id="fill"><label for="fill" class="radio-btn">Fill</label>
-      <input type="radio" name="pointer" value="drop" id="drop"><label for="drop" class="radio-btn">Color Dropper</label>
-    </details>
-    </div><div style="margin-right: 20px">
-    <details class="drawer" closed>
-      <summary>Toggle Fill Type</summary>
-      <input type="radio" name="fillstyle" value="every" id="every"><label for="every" class="radio-btn">Every Symmetric</label>
-      <input type="radio" name="fillstyle" value="other" id="other"><label for="other" class="radio-btn">Every Other Symmetric</label>
-      <input type="radio" name="fillstyle" value="one" id="one"><label for="one" class="radio-btn">Just the clicked area</label>
-    </details>
-    </div><div style="margin-right: 20px">
-    <details class="drawer" closed>
-      <summary>Toggle Gradient Type</summary>
-      <input type="radio" name="gradstyle" value="none" id="none"><label for="none" class="radio-btn">No Gradient</label>
-      <input type="radio" name="gradstyle" value="hue" id="hue"><label for="hue" class="radio-btn">Hue</label>
-      <input type="radio" name="gradstyle" value="sat" id="sat"><label for="sat" class="radio-btn">Saturation</label>
-      <input type="radio" name="gradstyle" value="lum" id="lum"><label for="lum" class="radio-btn">Luminance</label>
-    </details>
-    </div><div style="margin-right: 20px">
-    <details class="drawer" closed>
-      <summary>Toggle Draw Type</summary>
-      <input type="radio" name="drawstyle" value="regular" id="regular"><label for="regular" class="radio-btn">No Tessellation</label>
-      <input type="radio" name="drawstyle" value="tessel" id="tessel"><label for="tessel" class="radio-btn">Tessellation</label>
-      <input type="radio" name="drawstyle" value="double" id="double"><label for="double" class="radio-btn">Double Tessellation</label>
-      <input type="radio" name="drawstyle" value="recenter" id="recenter"><label for="recenter" class="radio-btn">Tessellation Center</label>
-    </details>
-    </div>
-    </div>
-    <div>
-    <details class="drawer" open>
-    <summary>
-    Flexible Color
-    </summary>
-      <div>
-      <canvas id="picker" width="600" height="600"></canvas>      
-      </div><div>
-      Luminance: <input type="range" id="luminance" min="0" max="255" value="127" style="width: 150px">
-      </div>
-    </details>
-    </div>
-    <div>
-      Reload a Mandala:
-      <input type="file" id="fileInput" accept="image/*">
-    </div>
+    <button id="shufButton" class="btn btn-primary">Shuffle from these two parents</button>
   </body>
 </html>

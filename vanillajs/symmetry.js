@@ -23,65 +23,10 @@ let drawOrFill = 'draw'
 let fillOrOther = 'every'
 let fillOrOtherDisplay = document.getElementById("fillOrOther")
 let curclicked = "black"
-const hexcanvas = document.getElementById("picker")
-const hexctx = hexcanvas.getContext("2d")
-
-const hexCenterX = hexcanvas.width / 2
 const radius = 220
-let luminance = document.getElementById("luminance")
-let hexx = hexCenterX
-let hexy = hexCenterX
-const hexwidth = 600 // must match html
 let flexref = ''
 
 const selectedref = [0, 0, 0, 0, 0, 0, 0, 0, 0]
-
-/**
- *  Colors button event listner example
- *
-**/
-const colorlist = [
-  ["red", "#FC8181"], ["orange", "#FFA500"], ["yellow", "#DEDE20"], ["green", "#2FD175"], 
-  ["darkgreen", "#108010"], ["blue", "#4383ED"],["darkblue", "#1213BD"], ["purple", "#9F7AEA"],
-  ["magenta", "#BD12B5"], ["brown", "#483C2C"], ["black", "#000000"], ["flex", "#808080"],
-  ["eraser", "#FFFFFF"]
-]
-const myDiv = document.getElementById('colorbuttons')
-// programmatically create as well as wire up the buttons
-for (let i = 0; i < colorlist.length; i++) {
-  const button = document.createElement('button')
-  if (colorlist[i][0] === 'flex') {
-    flexref = button
-  }
-  button.id = colorlist[i][0]
-  button.style.backgroundColor = colorlist[i][1]
-  if (colorlist[i][0] === 'eraser') {
-    button.style.color = 'black'
-    button.innerText = colorlist[i][0]
-  } else {
-    button.style.color = colorlist[i][1]
-    button.innerText = colorlist[i][0].slice(0, 4)
-  }
-  button.style.padding = '15px 32px'
-  button.style.borderRadius = '5px'
-  button.style.margin = '0 5px'
-  button.className = 'colorbutton'
-  myDiv.appendChild(button)
-}
-const buttons = document.querySelectorAll(".colorbutton")
-for (let i = 0; i < colorlist.length; i++) {
-  document.getElementById(colorlist[i][0]).addEventListener("click", () => {
-    color = colorlist[i][1]
-    curclicked = colorlist[i][0]
-    buttons.forEach(btn => btn.classList.remove("pop-out"))
-    document.getElementById(colorlist[i][0]).classList.add("pop-out")
-  })
-}
-
-// default color
-document.getElementById('black').classList.add("pop-out")
-
-addEventListener("load", load);
 
 /**
  * To reset the canvas, simply run the load function
@@ -294,8 +239,6 @@ function drawHexPicker(inpx, inpy) {
     hexctx.putImageData(image, 0, 0)
 
 }
-
-drawHexPicker(hexx, hexy)
 
 function isWhite({ r, g, b, a }) {
     return r === 255 && g === 255 && b === 255 && a === 255
@@ -714,137 +657,3 @@ function notanfun() {
   }
   ctx.putImageData(img, 0, 0)
 }
-
-// wire up sliders and buttons
-
-document.getElementById("loadButton").addEventListener("click", load)
-document.getElementById("notan").addEventListener("click", notanfun)
-
-sliderValueDisplay.textContent = 4
-
-slider.addEventListener("input", (event) => {
-   	const sliderValue = event.target.value
-   	sliderValueDisplay.textContent = sliderValue
-})
-
-const pointerButtons = document.querySelectorAll('input[name="pointer"]')
-
-pointerButtons.forEach(radio => {
-  radio.addEventListener('change', () => {
-    drawOrFill = document.querySelector('input[name="pointer"]:checked').value
-    drawFillSwap()
-  })
-})
-
-pointerButtons[0].checked = true
-
-const fillstyleButtons = document.querySelectorAll('input[name="fillstyle"]')
-
-fillstyleButtons.forEach(radio => {
-  radio.addEventListener('change', () => {
-    fillOrOther = document.querySelector('input[name="fillstyle"]:checked').value
-  })
-})
-
-fillstyleButtons[0].checked = true
-
-const drawstyleButtons = document.querySelectorAll('input[name="drawstyle"]')
-
-drawstyleButtons.forEach(radio => {
-  radio.addEventListener('change', () => {
-    const tesselButtonValue = document.querySelector('input[name="drawstyle"]:checked').value
-    dotess = 0
-    if (tesselButtonValue === 'tessel') {
-      dotess = 1
-    } else if (tesselButtonValue === 'double') {
-      dotess = 2
-    } else if (tesselButtonValue === 'recenter') {
-      dotess = 3
-    }
-  })
-})
-
-drawstyleButtons[0].checked = true
-
-const gradstyleButtons = document.querySelectorAll('input[name="gradstyle"]')
-
-gradstyleButtons.forEach(radio => {
-  radio.addEventListener('change', () => {
-    const gradButtonValue = document.querySelector('input[name="gradstyle"]:checked').value
-    dograd = 0
-    if (gradButtonValue === 'hue') {
-      dograd = 1
-    } else if (gradButtonValue === 'sat') {
-      dograd = 2
-    } else if (gradButtonValue === 'lum') {
-      dograd = 3
-    }
-  })
-})
-
-gradstyleButtons[0].checked = true
-
-sliderValueDisplay2.textContent = 16
-
-slider2.addEventListener("input", (event) => {
-   	const sliderValue2 = event.target.value
-   	sliderValueDisplay2.textContent = sliderValue2
-})
-
-window.addEventListener("DOMContentLoaded", () => {
-  const slider = document.getElementById("mySlider")
-  slider.value = 4   // Force it back to 4
-  const slider2 = document.getElementById("mySlider2")
-  slider2.value = 16   // Force it back to 16
-})
-
-function lumlist(hexx, hexy) {
-    drawHexPicker(hexx, hexy)
-    const pixel = hexctx.getImageData(hexx, hexy, 1, 1).data
-    colorUpdate(pixel)    
-}
-
-luminance.addEventListener("input", (event) => {
-    lumlist(hexx, hexy)
-})
-
-hexcanvas.addEventListener("click", e => {
-    const rect = hexcanvas.getBoundingClientRect()
-
-    const hexx = e.clientX - rect.left
-    const hexy = e.clientY - rect.top
-
-    if (false && !pointInHexagon(hexx, hexy)) return
-
-    const pixel = hexctx.getImageData(hexx, hexy, 1, 1).data
-    colorUpdate(pixel)
-
-    // Selection marker
-    drawHexPicker(hexx, hexy)
-    luminance.addEventListener("input", (event) => {
-        lumlist(hexx, hexy)
-    })
-})
-
-hexcanvas.addEventListener('mousemove', () => {
-  hexcanvas.style.cursor = "url('dropper.png') 6 26, auto"
-})
-
-const fileInput = document.getElementById('fileInput')
-
-fileInput.addEventListener('change', function(event) {
-  const selectedFile = event.target.files[0]
-
-  if (selectedFile) {
-    const reader = new FileReader()
-    
-    reader.onload = (e) => {
-      const img = new Image()
-      img.src = e.target.result
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, symmetry, symmetry)    
-      }      
-    }
-    reader.readAsDataURL(selectedFile)
-  }
-})
