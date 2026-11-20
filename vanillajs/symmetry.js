@@ -1,6 +1,11 @@
 "use strict";
 
-let canvas = document.getElementById("drawCanvas")
+let canvas = []
+for (let i = 0; i < 3; i++) {
+  for (let j = 0; j < 3; j++) {
+    canvas.push(document.getElementById("drawCanvas".concat(JSON.stringify(i)).concat(JSON.stringify(j))))
+  }
+} 
 
 let dotess = 0  // tessellation style
 let dograd = 0  // gradient style
@@ -76,11 +81,6 @@ document.getElementById('black').classList.add("pop-out")
 
 addEventListener("load", load);
 
-// start with draw mode, and a draw pencil
-canvas.addEventListener('mousemove', () => {
-  canvas.style.cursor = "url('pencil.png') 6 26, auto"
-})
-
 /**
  * To reset the canvas, simply run the load function
  * document.getElementById("reset").addEventListener("click", load);
@@ -90,36 +90,29 @@ function load() {
   /**
    * On your DOM, your Canvas ID must be drawCanvas
    */
-  getcanvas = document.getElementById("drawCanvas");
+  ctx = []
+  for (let i = 0; i < canvas.length; i++) {
 
-  ctx = getcanvas.getContext("2d");
-  ctx.fillStyle = 'white'
-  ctx.fillRect(0, 0, symmetry, symmetry);
+    ctx.push(canvas[i].getContext("2d"))
+    ctx[i].fillStyle = 'white'
+    ctx[i].fillRect(0, 0, symmetry, symmetry);
 
-  ctx.strokeStyle = "rgba(0,0,0,0.2)";
-  ctx.lineWidth = 0.5;
-  // Guides lines
+    ctx[i].strokeStyle = "rgba(0,0,0,0.2)";
+    ctx[i].lineWidth = 0.5;
+    // Guides lines
 
-  let lastDistance = 0
-  let scale = 1
-  let isPinching = false
+    let lastDistance = 0
+    let scale = 1
+    let isPinching = false
 
-  // fill areas with a click without moving the mouse, draw on movement
-  getcanvas.addEventListener("mousemove", drawFill)
-  getcanvas.addEventListener("mousedown", drawFill)
-  getcanvas.addEventListener("touchstart", (e) => {
-    // clear draw coordinates
-    var coord = getLocalCoordinates(e)
+    // fill areas with a click without moving the mouse, draw on movement
+    canvas[i].addEventListener("mousedown", (event) => evoselect(event, i))
+    canvas[i].addEventListener("touchstart", (event) => evoselect(event, i))
+  }
+}
 
-    prevX = coord[0]
-    prevY = coord[1]
-  }, { passive: false })
-  getcanvas.addEventListener("touchmove", (e) => {
-    e.preventDefault()
-    drawFill(e)
-  }, { passive: false })
-
-  /*  */
+function evoselect(event, i) {
+  console.log(i)
 }
 
 function drawFillSwap() {

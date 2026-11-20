@@ -1,35 +1,42 @@
 "use strict";
 
-const moveconst = 5
+const moveconst = 6
 
 const defaultGene = {
     sectors: 12,
-    strokeCount: 800,
+    strokeCount: 120,
     branchProbability: 0.3,
-    segmentLength: 3,
-    curvature: 0.5,
+    segmentLength: 7,
+    curvature: 0.9,
     direction: 0.7,
     length: 15,
     lenarr: [],
     dirarr: [],
     movarr: []
 }
+
 // initialize the gene
-let prevlen = defaultGene.length
-let prevdir = defaultGene.direction + random(defaultGene.curvature, -defaultGene.curvature)
-for (let i = 0; i < defaultGene.strokeCount; i++) {
-  let nlen = prevlen + Math.round(5 * Math.random() - 2)
-  if (nlen < 2) nlen = 2
-  defaultGene.lenarr.push(nlen)
-  defaultGene.dirarr.push(prevdir + random(defaultGene.curvature, -defaultGene.curvature))
-  let thismove = moveconst
-  //if (Math.random() < 0.2) thismove = 0
-  defaultGene.movarr.push(thismove)
-  prevlen = defaultGene.lenarr[i]
-  prevdir = defaultGene.dirarr[i]
+function geneInit(theGene) {
+  let prevlen = theGene.length
+  let prevdir = theGene.direction + randomLR(theGene.curvature, -theGene.curvature)
+  for (let i = 0; i < theGene.strokeCount; i++) {
+    let nlen = prevlen + Math.round(5 * Math.random() - 2)
+    if (nlen < 2) nlen = 2
+    theGene.lenarr.push(nlen)
+    theGene.dirarr.push(prevdir + randomLR(theGene.curvature, -theGene.curvature))
+    let thismove = moveconst
+    if (Math.random() < 0.2) {
+      thismove = 0
+    } else if (Math.random() < 0.6) {
+      thismove = Math.floor(moveconst / 2)
+    }
+    theGene.movarr.push(thismove)
+    prevlen = theGene.lenarr[i]
+    prevdir = theGene.dirarr[i]
+  }
 }
 
-function random(left, right) {
+function randomLR(left, right) {
   if (Math.random() > 0.5) {
     return right
   }
@@ -50,17 +57,19 @@ function grow(cell, genes) {
 
     const newDirection = genes.dirarr[cell.generation]
 
+    const radfactor = 8 * cell.generation / genes.strokeCount
+
     const nx =
         cell.x +
         genes.movarr[cell.generation] +
         Math.cos(newDirection) *
-        genes.segmentLength
+        genes.segmentLength * radfactor
 
     const ny =
         cell.y +
         -genes.movarr[cell.generation] +
         Math.sin(newDirection) *
-        genes.segmentLength
+        genes.segmentLength * radfactor
 
     let nlen = genes.lenarr[cell.generation]
 
@@ -68,44 +77,57 @@ function grow(cell, genes) {
         curvature: cell.curvature,
         x: nx,
         y: ny,
+        px: cell.x,
+        py: cell.y,
         direction: newDirection,
         generation: cell.generation + 1,
         length: nlen
     }
 
-    /*
-    drawMirrored({
-        px: cell.x,
-        py: cell.y,
-        x: nx,
-        y: ny
-    }, genes.sectors)
-    */
     return child
+}
+
+function notRandomLR(left, right, chooser) {
+  if (chooser === 0) return left
+  return right
 }
 
 function randomCopilotEvolver(thisGene) {
   const growthPoints = []
-  let thisCell = {direction: thisGene.direction, curvature: thisGene.curvature, x: xCenter, y: xCenter, length: thisGene.length, generation: 0}
+  let thisCell = {direction: thisGene.direction, curvature: thisGene.curvature, x: 0, y: 0, px: 0, py: 0, length: thisGene.length, generation: 0}
   growthPoints.push(thisCell)
   for (let i = 0; i < thisGene.strokeCount; i++) {
+    let prevCell = structuredClone(thisCell)
     thisCell = grow(thisCell, thisGene)
     growthPoints.push(thisCell)
+    // branch
+    if (thisGene.movarr[thisCell.generation] === 0) {
+      thisCell = grow(thisCell, thisGene)
+      growthPoints.push(thisCell)
+    }
   }
   for (let stroke of growthPoints) {
 
       let angle =
           stroke.direction +
-          random(-thisGene.curvature, thisGene.curvature);
+          notRandomLR(-thisGene.curvature, thisGene.curvature, thisGene.movarr[stroke.generation]);
 
       let length =
           stroke.length
 
+      let nx = stroke.x
+      let ny = stroke.y
+
+      if (thisGene.movarr[stroke.generation] === 0) {
+        nx = stroke.x + Math.cos(angle) * length
+        ny = stroke.y + Math.sin(angle) * length
+      }
+
       let next = {
-          x: stroke.x + Math.cos(angle) * length,
-          y: stroke.y + Math.sin(angle) * length,
-          px: stroke.x,
-          py: stroke.y
+          x: nx,
+          y: ny,
+          px: stroke.px,
+          py: stroke.py
       }
 
       drawMirrored(next, thisGene.sectors)
@@ -114,8 +136,8 @@ function randomCopilotEvolver(thisGene) {
 
 function rotatePoint(x, y, a) {
     return {
-        x: (x * Math.cos(a) - y * Math.sin(a)) / 15 + xCenter,
-        y: (x * Math.sin(a) + y * Math.cos(a)) / 15 + xCenter
+        x: (x * Math.cos(a) - y * Math.sin(a)) / 1 + xCenter,
+        y: (x * Math.sin(a) + y * Math.cos(a)) / 1 + xCenter
     }
 }
 
@@ -260,7 +282,9 @@ function randomDraw() {
   // five styles of random mandala
   const randval = Math.random()
   if (true) {
-    randomCopilotEvolver(defaultGene)
+    let myGene = structuredClone(defaultGene)
+    geneInit(myGene)
+    randomCopilotEvolver(myGene)
   } else if (randval < 0.12) {
     console.log("copilot style")
     randomCopilotMandala(xCenter, xCenter, xCenter, slider2.value)
